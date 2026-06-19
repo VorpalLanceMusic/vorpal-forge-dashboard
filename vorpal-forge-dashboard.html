@@ -964,6 +964,86 @@
     box-shadow: 0 0 40px rgba(0, 0, 0, 0.5);
   }
 
+  .modal-large {
+    width: min(920px, 92vw);
+    max-height: 88vh;
+  }
+
+  .modal-2col {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+  }
+
+  .modal-2col-divider {
+    border-left: 1px solid var(--border);
+    padding-left: 20px;
+  }
+
+  .form-readonly-block {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 10px 12px;
+    margin-bottom: 10px;
+  }
+
+  .form-readonly-label {
+    font-size: 0.62rem;
+    color: var(--text-ghost);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-bottom: 4px;
+  }
+
+  .form-readonly-value {
+    font-size: 0.8rem;
+    color: var(--text);
+    line-height: 1.5;
+    white-space: pre-wrap;
+  }
+
+  .calc-line-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 7px 9px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    margin-bottom: 5px;
+    font-size: 0.76rem;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .calc-line-item:hover { border-color: var(--teal-dim); }
+  .calc-line-item.selected { border-color: var(--teal); background: var(--teal-ghost); }
+
+  .calc-total-bar {
+    background: var(--bg-card);
+    border: 1px solid var(--border-gold);
+    border-radius: var(--radius-sm);
+    padding: 12px;
+    margin-top: 10px;
+    text-align: center;
+  }
+
+  .calc-total-value {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 1.6rem;
+    color: var(--gold);
+    text-shadow: 0 0 14px var(--gold-glow);
+  }
+
+  .calc-category-label {
+    font-size: 0.62rem;
+    color: var(--teal-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin: 12px 0 6px 0;
+  }
+
   .modal-title {
     font-family: 'Cinzel', serif;
     font-size: 0.9rem;
@@ -1851,68 +1931,81 @@ function saveNewCommission() {
 function openCommissionDetail(id) {
   const c = commissions.find(x => x.id === id);
   if (!c) return;
+
+  const hasPrice = (c.basePrice ?? c.price ?? 0) > 0;
+
   showModal(`
-    <div class="modal">
+    <div class="modal modal-large">
       <div class="modal-title">Edit Commission — ${esc(c.clientName)}</div>
-      <div class="form-row">
-        <div class="form-group">
-          <label class="form-label">Client Name</label>
-          <input class="form-input" id="ed-name" value="${esc(c.clientName)}">
+      <div class="modal-2col">
+        <div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Client Name</label>
+              <input class="form-input" id="ed-name" value="${esc(c.clientName)}">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Contact Method</label>
+              <input class="form-input" id="ed-contact" value="${esc(c.contactMethod)}">
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Type</label>
+              <select class="form-select" id="ed-type">
+                ${['Stinger SFX (10sec)','Jingle (1min)','Short Music (2min)','Standard Music (3-4min)','Extended Music (5min+)','Campaign Score','Map','Coaching','Bundle','Other'].map(t=>
+                  `<option value="${t}" ${c.type===t?'selected':''}>${t}</option>`
+                ).join('')}
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Agreed Price ($)</label>
+              <input class="form-input" id="ed-price" type="number" value="${c.basePrice ?? c.price ?? 0}" onchange="togglePricingCalc(this.value)">
+            </div>
+          </div>
+          ${!hasPrice ? `<button class="btn btn-gold btn-sm" style="width:100%;margin-bottom:10px;" onclick="openPricingCalculator('${c.id}')">🧮 Open Pricing Calculator</button>` : ''}
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Stage</label>
+              <select class="form-select" id="ed-stage">
+                ${Object.entries(STAGE_LABELS).map(([v,l])=>
+                  `<option value="${v}" ${c.stage===v?'selected':''}>${l}</option>`
+                ).join('')}
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Payment Status</label>
+              <select class="form-select" id="ed-pay" onchange="toggleTipField('ed-tip-row', this.value)">
+                <option value="" ${!c.paymentStatus?'selected':''}>— Not Yet —</option>
+                ${Object.entries(PAY_LABELS).map(([v,l])=>
+                  `<option value="${v}" ${c.paymentStatus===v?'selected':''}>${l}</option>`
+                ).join('')}
+              </select>
+            </div>
+          </div>
+          <div class="form-group" id="ed-tip-row" style="display:${c.paymentStatus==='tip'?'block':'none'};">
+            <label class="form-label">Tip Amount ($)</label>
+            <input class="form-input" id="ed-tip" type="number" placeholder="0.00" value="${c.tipAmount||''}" style="max-width:160px;">
+            <div style="font-size:0.65rem;color:var(--text-ghost);margin-top:3px;">Added to total price automatically.</div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Date Due</label>
+            <input class="form-input" id="ed-due" type="date" value="${c.dateDue||''}">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Pre-Start Tasks</label>
+            <input class="form-input" id="ed-tasks" value="${esc(c.preTasks||'')}">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Notes</label>
+            <textarea class="form-textarea" id="ed-notes" style="min-height:90px;">${esc(c.notes||'')}</textarea>
+          </div>
         </div>
-        <div class="form-group">
-          <label class="form-label">Contact Method</label>
-          <input class="form-input" id="ed-contact" value="${esc(c.contactMethod)}">
+
+        <div class="modal-2col-divider">
+          <div class="form-readonly-label" style="font-size:0.68rem;margin-bottom:10px;color:var(--teal);">📋 Form Responses ${c.fromForm ? '' : '<span style="color:var(--text-ghost);font-weight:400;">(manually added — no form data)</span>'}</div>
+          ${renderFormResponsesReadout(c)}
         </div>
-      </div>
-      <div class="form-row">
-        <div class="form-group">
-          <label class="form-label">Type</label>
-          <select class="form-select" id="ed-type">
-            ${['Stinger SFX (10sec)','Jingle (1min)','Short Music (2min)','Standard Music (3-4min)','Extended Music (5min+)','Campaign Score','Map','Coaching','Bundle','Other'].map(t=>
-              `<option value="${t}" ${c.type===t?'selected':''}>${t}</option>`
-            ).join('')}
-          </select>
-        </div>
-        <div class="form-group">
-          <label class="form-label">Price ($)</label>
-          <input class="form-input" id="ed-price" type="number" value="${c.basePrice ?? c.price ?? 0}">
-        </div>
-      </div>
-      <div class="form-row">
-        <div class="form-group">
-          <label class="form-label">Stage</label>
-          <select class="form-select" id="ed-stage">
-            ${Object.entries(STAGE_LABELS).map(([v,l])=>
-              `<option value="${v}" ${c.stage===v?'selected':''}>${l}</option>`
-            ).join('')}
-          </select>
-        </div>
-        <div class="form-group">
-          <label class="form-label">Payment Status</label>
-          <select class="form-select" id="ed-pay" onchange="toggleTipField('ed-tip-row', this.value)">
-            <option value="" ${!c.paymentStatus?'selected':''}>— Not Yet —</option>
-            ${Object.entries(PAY_LABELS).map(([v,l])=>
-              `<option value="${v}" ${c.paymentStatus===v?'selected':''}>${l}</option>`
-            ).join('')}
-          </select>
-        </div>
-      </div>
-      <div class="form-group" id="ed-tip-row" style="display:${c.paymentStatus==='tip'?'block':'none'};">
-        <label class="form-label">Tip Amount ($)</label>
-        <input class="form-input" id="ed-tip" type="number" placeholder="0.00" value="${c.tipAmount||''}" style="max-width:160px;">
-        <div style="font-size:0.65rem;color:var(--text-ghost);margin-top:3px;">Added to total price automatically.</div>
-      </div>
-      <div class="form-group">
-        <label class="form-label">Date Due</label>
-        <input class="form-input" id="ed-due" type="date" value="${c.dateDue||''}">
-      </div>
-      <div class="form-group">
-        <label class="form-label">Pre-Start Tasks</label>
-        <input class="form-input" id="ed-tasks" value="${esc(c.preTasks||'')}">
-      </div>
-      <div class="form-group">
-        <label class="form-label">Notes</label>
-        <textarea class="form-textarea" id="ed-notes">${esc(c.notes||'')}</textarea>
       </div>
       <div class="modal-actions">
         <button class="btn" style="color:var(--danger);border-color:var(--danger);" onclick="deleteCommission('${c.id}');closeModal()">Delete</button>
@@ -1920,6 +2013,149 @@ function openCommissionDetail(id) {
         <button class="btn btn-teal" onclick="saveCommissionEdit('${c.id}')">Save</button>
       </div>
     </div>`);
+}
+
+function renderFormResponsesReadout(c) {
+  if (!c.notes) {
+    return '<div class="empty-state">No additional details on file.</div>';
+  }
+  // Notes blob was built with labeled lines like "Genre: X" — split and display cleanly
+  const lines = c.notes.split('\n').filter(l => l.trim());
+  let html = '';
+  lines.forEach(line => {
+    const colonIdx = line.indexOf(':');
+    if (colonIdx > 0 && colonIdx < 40) {
+      const label = line.slice(0, colonIdx).trim();
+      const value = line.slice(colonIdx + 1).trim();
+      if (value) {
+        html += `<div class="form-readonly-block">
+          <div class="form-readonly-label">${esc(label)}</div>
+          <div class="form-readonly-value">${esc(value)}</div>
+        </div>`;
+      }
+    } else if (line.trim()) {
+      html += `<div class="form-readonly-block">
+        <div class="form-readonly-value">${esc(line.trim())}</div>
+      </div>`;
+    }
+  });
+  return html || '<div class="empty-state">No additional details on file.</div>';
+}
+
+function togglePricingCalc(priceValue) {
+  // If they manually type a price, no need to force the calculator
+}
+
+const PRICING_RATES = {
+  'Base Rates': [
+    { label: 'Single Sound Alert (under 10 sec)', amount: 5 },
+    { label: 'Jingle / Sting (under 30 sec)', amount: 15 },
+    { label: 'Short Track (up to 2 min)', amount: 30 },
+    { label: 'Standard Track (3-4 min)', amount: 45 },
+    { label: 'Extended Track (5+ min)', amount: 60 },
+  ],
+  'Music Add-Ons': [
+    { label: 'New instrument/sample pack', amount: 15 },
+    { label: 'Heavy sound effects', amount: 10 },
+    { label: 'Lyric writing (no vocals)', amount: 20 },
+    { label: 'Rush delivery (under 10 days)', amount: 20 },
+    { label: 'Cover/adaptation, basic', amount: 10 },
+    { label: 'Cover/adaptation, complex', amount: 20 },
+    { label: 'Additional revision', amount: 10 },
+    { label: 'Music + Map combo discount', amount: -5 },
+  ],
+  'Map Commissions': [
+    { label: 'Battle Map', amount: 25 },
+    { label: 'Interior/Building', amount: 30 },
+    { label: 'Dungeon Map', amount: 37 },
+    { label: 'City Map', amount: 50 },
+    { label: 'Region/Area Map', amount: 55 },
+    { label: 'World Map', amount: 80 },
+  ],
+  'Map Add-Ons': [
+    { label: 'VTT ready (Roll20/Foundry)', amount: 10 },
+    { label: 'Labeled version included', amount: 5 },
+    { label: 'Rush delivery', amount: 15 },
+    { label: 'Worldbuilding consult (30min)', amount: 15 },
+    { label: 'Animated map, atmospheric', amount: 15 },
+    { label: 'Animated map, complex', amount: 25 },
+  ],
+  'D&D Coaching': [
+    { label: 'NPC Building Session', amount: 15 },
+    { label: 'Creature/Encounter Building', amount: 15 },
+    { label: 'Full Session Prep', amount: 30 },
+    { label: 'How To Be A Better Player', amount: 20 },
+    { label: 'Full DM Coaching Session', amount: 40 },
+  ],
+};
+
+function openPricingCalculator(commissionId) {
+  const c = commissions.find(x => x.id === commissionId);
+  const visionContext = c ? (c.notes || '') : '';
+
+  let categoriesHtml = '';
+  Object.entries(PRICING_RATES).forEach(([category, items]) => {
+    categoriesHtml += `<div class="calc-category-label">${category}</div>`;
+    items.forEach((item, i) => {
+      const itemId = category.replace(/\s/g,'') + '_' + i;
+      categoriesHtml += `<div class="calc-line-item" id="calc-${itemId}" onclick="toggleCalcItem('${itemId}', ${item.amount})">
+        <span>${item.label}</span>
+        <span style="color:${item.amount < 0 ? 'var(--success)' : 'var(--gold)'};font-family:'JetBrains Mono',monospace;">${item.amount < 0 ? '-' : '+'}$${Math.abs(item.amount)}</span>
+      </div>`;
+    });
+  });
+
+  showModal(`
+    <div class="modal modal-large">
+      <div class="modal-title">🧮 Pricing Calculator</div>
+      <div class="modal-2col">
+        <div style="max-height:60vh;overflow-y:auto;">
+          ${categoriesHtml}
+        </div>
+        <div class="modal-2col-divider">
+          <div class="form-readonly-label" style="font-size:0.68rem;margin-bottom:10px;color:var(--teal);">What they asked for</div>
+          <div style="max-height:50vh;overflow-y:auto;">
+            ${renderFormResponsesReadout({ notes: visionContext })}
+          </div>
+        </div>
+      </div>
+      <div class="calc-total-bar">
+        <div style="font-size:0.65rem;color:var(--text-ghost);text-transform:uppercase;letter-spacing:0.1em;">Calculated Total</div>
+        <div class="calc-total-value" id="calc-total">$0</div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn" onclick="closeModal();openCommissionDetail('${commissionId}')">Back to Commission</button>
+        <button class="btn btn-teal" onclick="applyCalculatedPrice('${commissionId}')">Use This Price</button>
+      </div>
+    </div>`);
+
+  window.calcSelectedItems = {};
+}
+
+function toggleCalcItem(itemId, amount) {
+  const el = document.getElementById('calc-' + itemId);
+  if (!window.calcSelectedItems) window.calcSelectedItems = {};
+
+  if (window.calcSelectedItems[itemId] !== undefined) {
+    delete window.calcSelectedItems[itemId];
+    el.classList.remove('selected');
+  } else {
+    window.calcSelectedItems[itemId] = amount;
+    el.classList.add('selected');
+  }
+
+  const total = Object.values(window.calcSelectedItems).reduce((s, v) => s + v, 0);
+  document.getElementById('calc-total').textContent = '$' + total.toFixed(0);
+}
+
+function applyCalculatedPrice(commissionId) {
+  const total = Object.values(window.calcSelectedItems || {}).reduce((s, v) => s + v, 0);
+  closeModal();
+  openCommissionDetail(commissionId);
+  setTimeout(() => {
+    const priceField = document.getElementById('ed-price');
+    if (priceField) priceField.value = total;
+  }, 50);
 }
 
 function saveCommissionEdit(id) {
