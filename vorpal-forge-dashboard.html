@@ -1579,6 +1579,7 @@ function renderActiveCard(c) {
       <button class="btn btn-sm" onclick="event.stopPropagation();openCommissionDetail('${c.id}')" title="Edit">✎</button>
       <button class="btn btn-sm" style="color:var(--danger);" onclick="event.stopPropagation();deleteCommission('${c.id}')">✕</button>
     </div>
+    <button class="btn btn-sm" style="width:100%;margin-top:5px;color:var(--gold-dim);" onclick="event.stopPropagation();returnToWaitlist('${c.id}')">↩ Return to Waitlist</button>
   </div>`;
 }
 
@@ -1677,6 +1678,15 @@ function moveToActive(id) {
   c.stage = 'received';
   save('vf_commissions', commissions);
   showPraise('waitlistMove');
+  renderBoard();
+}
+
+function returnToWaitlist(id) {
+  const c = commissions.find(x => x.id === id);
+  if (!c) return;
+  c.slot = 'waitlist';
+  c.stage = 'received';
+  save('vf_commissions', commissions);
   renderBoard();
 }
 
@@ -2565,14 +2575,11 @@ async function syncFromSheet() {
       const id = row.ID;
       if (!id || syncedIds.includes(id)) return; // Already imported
 
-      // Check active slot count at import time
-      const activeNow = commissions.filter(c => c.slot === 'active' && c.stage !== 'delivered').length;
-      const slot = activeNow < 3 ? 'active' : 'waitlist';
-
-      // Map Sheet columns to dashboard commission object
+      // Everything lands in Waitlist by default — Vorpal decides
+      // when (and if) something graduates to Active. No auto-fill.
       const c = {
         id: id,
-        slot: row.Slot || slot,
+        slot: 'waitlist',
         clientName: row.ClientName || 'Unknown',
         contactMethod: row.ContactMethod || '',
         email: row.Email || '',
@@ -2600,7 +2607,7 @@ async function syncFromSheet() {
       save('vf_commissions', commissions);
       renderBoard();
       if (syncStatus) {
-        syncStatus.textContent = `✓ ${newCount} new submission${newCount > 1 ? 's' : ''} imported`;
+        syncStatus.textContent = `✓ ${newCount} new submission${newCount > 1 ? 's' : ''} added to waitlist`;
         syncStatus.style.color = 'var(--success)';
       }
       if (newCount > 0) showPraise('waitlistMove');
