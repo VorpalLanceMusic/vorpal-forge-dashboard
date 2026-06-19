@@ -100,10 +100,99 @@
     font-weight: 600;
   }
 
+  /* Tab Bar */
+  .tab-bar {
+    display: flex;
+    gap: 4px;
+    padding: 0 18px;
+    background: rgba(10, 12, 16, 0.8);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    backdrop-filter: blur(12px);
+  }
+
+  .tab-btn {
+    padding: 9px 16px;
+    font-size: 0.7rem;
+    font-family: 'Cinzel', serif;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: all 0.2s;
+    background: none;
+    border-top: none;
+    border-left: none;
+    border-right: none;
+  }
+
+  .tab-btn:hover { color: var(--text); }
+  .tab-btn.active { color: var(--teal); border-bottom-color: var(--teal); }
+
+  .page-view { display: none; }
+  .page-view.active { display: block; }
+
+  /* Compact panels for coaching/one-shot summary widgets */
+  .mini-panel-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .mini-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 8px 10px;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-size: 0.74rem;
+  }
+
+  .mini-card:hover { border-color: var(--teal-dim); background: var(--bg-card-hover); }
+
+  .mini-card-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 3px;
+  }
+
+  .mini-card-name { font-weight: 600; color: var(--text); }
+  .mini-card-sub { font-size: 0.65rem; color: var(--text-dim); }
+
+  .status-dots { display: flex; gap: 4px; margin-top: 4px; }
+  .status-dot {
+    font-size: 0.6rem;
+    padding: 1px 6px;
+    border-radius: 20px;
+    border: 1px solid var(--border);
+    color: var(--text-ghost);
+  }
+  .status-dot.on { color: var(--success); border-color: rgba(85,204,136,0.3); background: rgba(85,204,136,0.1); }
+
+  .tag-badge {
+    font-size: 0.58rem;
+    padding: 1px 6px;
+    border-radius: 20px;
+    background: var(--teal-ghost);
+    color: var(--teal-dim);
+    border: 1px solid var(--border);
+    margin-right: 3px;
+    display: inline-block;
+    margin-bottom: 3px;
+  }
+
+  .match-highlight {
+    border-color: var(--gold) !important;
+    box-shadow: 0 0 12px var(--gold-ghost);
+  }
+
   /* Main top section: stats col + commissions + reminders col */
   .top-section {
     display: grid;
-    grid-template-columns: 200px 1fr 220px;
+    grid-template-columns: 200px 1fr 220px 260px;
     gap: 14px;
     min-height: 0;
   }
@@ -1216,6 +1305,16 @@
     </div>
   </header>
 
+  <!-- TAB BAR -->
+  <nav class="tab-bar">
+    <button class="tab-btn active" onclick="switchPage('dashboard', this)">Dashboard</button>
+    <button class="tab-btn" onclick="switchPage('coaching', this)">Coaching</button>
+    <button class="tab-btn" onclick="switchPage('matchmaking', this)">Matchmaking</button>
+  </nav>
+
+  <!-- DASHBOARD PAGE -->
+  <div class="page-view active" id="page-dashboard">
+
   <!-- TOP SECTION -->
   <div class="top-section">
 
@@ -1308,6 +1407,27 @@
         </div>
       </div>
     </div>
+
+    <!-- SERVICES AT A GLANCE (new far-right col) -->
+    <div class="panel">
+      <div class="panel-header">
+        <span class="panel-title">🎲 Coaching & One-Shots</span>
+        <button class="btn-icon" onclick="switchPageByName('coaching')" title="Full Coaching View">↗</button>
+      </div>
+      <div class="panel-body">
+        <div style="font-size:0.62rem;color:var(--text-ghost);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;">
+          <span>Upcoming Coaching</span>
+          <button class="btn-icon" onclick="openNewCoaching()" title="New Coaching Session">+</button>
+        </div>
+        <div class="mini-panel-list" id="mini-coaching-list" style="margin-bottom:14px;"></div>
+
+        <div style="font-size:0.62rem;color:var(--text-ghost);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;">
+          <span>One-Shot Queue</span>
+          <button class="btn-icon" onclick="openNewOneShot()" title="New One-Shot Request">+</button>
+        </div>
+        <div class="mini-panel-list" id="mini-oneshot-list"></div>
+      </div>
+    </div>
   </div>
 
   <!-- BOTTOM SECTION -->
@@ -1377,6 +1497,32 @@
     </div>
 
   </div>
+  </div> <!-- /page-dashboard -->
+
+  <!-- COACHING PAGE -->
+  <div class="page-view" id="page-coaching">
+    <div class="panel" style="min-height:75vh;">
+      <div class="panel-header">
+        <span class="panel-title">🎲 D&D Coaching Sessions</span>
+        <button class="btn btn-teal btn-sm" onclick="openNewCoaching()">+ New Coaching Session</button>
+      </div>
+      <div class="panel-body" id="coaching-full-list" style="display:grid;grid-template-columns:repeat(auto-fill, minmax(280px, 1fr));gap:10px;align-content:start;">
+      </div>
+    </div>
+  </div>
+
+  <!-- MATCHMAKING / ONE-SHOTS PAGE -->
+  <div class="page-view" id="page-matchmaking">
+    <div class="panel" style="min-height:75vh;">
+      <div class="panel-header">
+        <span class="panel-title">⚔ One-Shot Matchmaking</span>
+        <button class="btn btn-teal btn-sm" onclick="openNewOneShot()">+ New One-Shot Request</button>
+      </div>
+      <div class="panel-body" id="oneshot-full-list" style="display:grid;grid-template-columns:repeat(auto-fill, minmax(320px, 1fr));gap:10px;align-content:start;">
+      </div>
+    </div>
+  </div>
+
 </div>
 
 <!-- PRAISE OVERLAY -->
@@ -1474,6 +1620,8 @@ let commissions = load('vf_commissions', []);
 let reminders = load('vf_reminders', []);
 let todos = load('vf_todos', []);
 let expenses = load('vf_expenses', []);
+let coachingSessions = load('vf_coaching', []);
+let oneShots = load('vf_oneshots', []);
 let calDefault = load('vf_cal_default', {});
 let calCurrent = load('vf_cal_current', {});
 let currentTab = 'active';
@@ -2917,14 +3065,616 @@ function buildNotes(row) {
 }
 
 // ═══════════════════════════════════════════════
-// INIT
+// TAB / PAGE SWITCHING
 // ═══════════════════════════════════════════════
+function switchPage(pageName, btn) {
+  document.querySelectorAll('.page-view').forEach(p => p.classList.remove('active'));
+  document.getElementById('page-' + pageName).classList.add('active');
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+
+  if (pageName === 'coaching') renderCoachingFull();
+  if (pageName === 'matchmaking') renderOneShotFull();
+}
+
+function switchPageByName(pageName) {
+  const btn = Array.from(document.querySelectorAll('.tab-btn')).find(b =>
+    b.getAttribute('onclick').includes(`'${pageName}'`)
+  );
+  switchPage(pageName, btn);
+}
+
+// ═══════════════════════════════════════════════
+// COACHING — auto income logging (mirrors commission pattern)
+// ═══════════════════════════════════════════════
+function autoLogCoachingIncome(session) {
+  expenses = expenses.filter(e => e.autoId !== session.id);
+  const paid = session.paymentStatus === 'full' || session.paymentStatus === 'tip';
+  if (!paid) { save('vf_expenses', expenses); renderExpenses(); updateStats(); return; }
+
+  const desc = session.tipAmount
+    ? `${session.clientName} — Coaching: ${session.topic || 'Session'} (incl. $${session.tipAmount} tip)`
+    : `${session.clientName} — Coaching: ${session.topic || 'Session'}`;
+
+  expenses.push({
+    id: 'e_' + Date.now(),
+    autoId: session.id,
+    desc,
+    amount: session.price || 0,
+    type: 'income',
+    date: new Date().toISOString().split('T')[0],
+    auto: true,
+  });
+  save('vf_expenses', expenses);
+  renderExpenses();
+  updateStats();
+}
+
+function openNewCoaching() {
+  showModal(`
+    <div class="modal">
+      <div class="modal-title">New Coaching Session</div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Client Name</label>
+          <input class="form-input" id="cs-name" placeholder="Who's this with?">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Contact Method</label>
+          <input class="form-input" id="cs-contact" placeholder="Discord / Email">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Service</label>
+          <select class="form-select" id="cs-service">
+            <option value="NPC Building Session">NPC Building Session — $15</option>
+            <option value="Creature/Encounter Building">Creature/Encounter Building — $15</option>
+            <option value="Full Session Prep">Full Session Prep — $30</option>
+            <option value="How To Be A Better Player">How To Be A Better Player — $20</option>
+            <option value="Full DM Coaching Session">Full DM Coaching Session — $40</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Price ($)</label>
+          <input class="form-input" id="cs-price" type="number" placeholder="0.00">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Date</label>
+          <input class="form-input" id="cs-date" type="date">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Time</label>
+          <input class="form-input" id="cs-time" type="time">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Payment Status</label>
+        <select class="form-select" id="cs-pay">
+          <option value="">— Not Yet —</option>
+          <option value="partial">Partial</option>
+          <option value="full">Paid in Full</option>
+          <option value="tip">Tip Added</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Discussion Topic</label>
+        <input class="form-input" id="cs-topic" placeholder="What are we covering?">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Notes</label>
+        <textarea class="form-textarea" id="cs-notes" placeholder="Prep notes, context, links..."></textarea>
+      </div>
+      <div class="modal-actions">
+        <button class="btn" onclick="closeModal()">Cancel</button>
+        <button class="btn btn-teal" onclick="saveNewCoaching()">Add Session</button>
+      </div>
+    </div>`);
+}
+
+function saveNewCoaching() {
+  const name = document.getElementById('cs-name').value.trim();
+  if (!name) return alert('Client name required.');
+  const session = {
+    id: 'coach_' + Date.now(),
+    clientName: name,
+    contactMethod: document.getElementById('cs-contact').value.trim() || 'Discord',
+    service: document.getElementById('cs-service').value,
+    price: parseFloat(document.getElementById('cs-price').value) || 0,
+    date: document.getElementById('cs-date').value,
+    time: document.getElementById('cs-time').value,
+    paymentStatus: document.getElementById('cs-pay').value,
+    topic: document.getElementById('cs-topic').value.trim(),
+    notes: document.getElementById('cs-notes').value.trim(),
+  };
+  coachingSessions.push(session);
+  save('vf_coaching', coachingSessions);
+  autoLogCoachingIncome(session);
+  closeModal();
+  renderCoachingMini();
+  renderCoachingFull();
+}
+
+function openEditCoaching(id) {
+  const s = coachingSessions.find(x => x.id === id);
+  if (!s) return;
+  showModal(`
+    <div class="modal">
+      <div class="modal-title">Edit Coaching — ${esc(s.clientName)}</div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Client Name</label>
+          <input class="form-input" id="cs-name" value="${esc(s.clientName)}">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Contact Method</label>
+          <input class="form-input" id="cs-contact" value="${esc(s.contactMethod)}">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Service</label>
+          <select class="form-select" id="cs-service">
+            ${['NPC Building Session','Creature/Encounter Building','Full Session Prep','How To Be A Better Player','Full DM Coaching Session'].map(t=>
+              `<option value="${t}" ${s.service===t?'selected':''}>${t}</option>`).join('')}
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Price ($)</label>
+          <input class="form-input" id="cs-price" type="number" value="${s.price||0}">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Date</label>
+          <input class="form-input" id="cs-date" type="date" value="${s.date||''}">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Time</label>
+          <input class="form-input" id="cs-time" type="time" value="${s.time||''}">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Payment Status</label>
+        <select class="form-select" id="cs-pay">
+          <option value="" ${!s.paymentStatus?'selected':''}>— Not Yet —</option>
+          <option value="partial" ${s.paymentStatus==='partial'?'selected':''}>Partial</option>
+          <option value="full" ${s.paymentStatus==='full'?'selected':''}>Paid in Full</option>
+          <option value="tip" ${s.paymentStatus==='tip'?'selected':''}>Tip Added</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Discussion Topic</label>
+        <input class="form-input" id="cs-topic" value="${esc(s.topic||'')}">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Notes</label>
+        <textarea class="form-textarea" id="cs-notes">${esc(s.notes||'')}</textarea>
+      </div>
+      <div class="modal-actions">
+        <button class="btn" style="color:var(--danger);border-color:var(--danger);" onclick="deleteCoaching('${s.id}');closeModal()">Delete</button>
+        <button class="btn" onclick="closeModal()">Cancel</button>
+        <button class="btn btn-teal" onclick="saveCoachingEdit('${s.id}')">Save</button>
+      </div>
+    </div>`);
+}
+
+function saveCoachingEdit(id) {
+  const s = coachingSessions.find(x => x.id === id);
+  if (!s) return;
+  s.clientName = document.getElementById('cs-name').value.trim() || s.clientName;
+  s.contactMethod = document.getElementById('cs-contact').value.trim();
+  s.service = document.getElementById('cs-service').value;
+  s.price = parseFloat(document.getElementById('cs-price').value) || 0;
+  s.date = document.getElementById('cs-date').value;
+  s.time = document.getElementById('cs-time').value;
+  s.paymentStatus = document.getElementById('cs-pay').value;
+  s.topic = document.getElementById('cs-topic').value.trim();
+  s.notes = document.getElementById('cs-notes').value.trim();
+  save('vf_coaching', coachingSessions);
+  autoLogCoachingIncome(s);
+  closeModal();
+  renderCoachingMini();
+  renderCoachingFull();
+}
+
+function deleteCoaching(id) {
+  coachingSessions = coachingSessions.filter(s => s.id !== id);
+  expenses = expenses.filter(e => e.autoId !== id);
+  save('vf_coaching', coachingSessions);
+  save('vf_expenses', expenses);
+  renderCoachingMini();
+  renderCoachingFull();
+  renderExpenses();
+  updateStats();
+}
+
+function renderCoachingMini() {
+  const el = document.getElementById('mini-coaching-list');
+  if (!el) return;
+  const upcoming = [...coachingSessions]
+    .filter(s => s.date)
+    .sort((a,b) => new Date(a.date + ' ' + (a.time||'')) - new Date(b.date + ' ' + (b.time||'')))
+    .slice(0, 4);
+
+  if (upcoming.length === 0) {
+    el.innerHTML = '<div class="empty-state" style="padding:8px 0;font-size:0.7rem;">Nothing scheduled.</div>';
+    return;
+  }
+  el.innerHTML = upcoming.map(s => `
+    <div class="mini-card" onclick="openEditCoaching('${s.id}')">
+      <div class="mini-card-top">
+        <span class="mini-card-name">${esc(s.clientName)}</span>
+        <span class="mini-card-sub">${s.date||''} ${s.time||''}</span>
+      </div>
+      <div class="mini-card-sub">${esc(s.topic || s.service || '')}</div>
+    </div>`).join('');
+}
+
+function renderCoachingFull() {
+  const el = document.getElementById('coaching-full-list');
+  if (!el) return;
+  if (coachingSessions.length === 0) {
+    el.innerHTML = '<div class="empty-state">No coaching sessions yet.</div>';
+    return;
+  }
+  const sorted = [...coachingSessions].sort((a,b) => new Date(b.date||0) - new Date(a.date||0));
+  el.innerHTML = sorted.map(s => {
+    const payLabel = s.paymentStatus ? (PAY_LABELS[s.paymentStatus]||'') : '';
+    const payClass = s.paymentStatus ? (PAY_CLASSES[s.paymentStatus]||'') : '';
+    return `<div class="comm-card active-card" onclick="openEditCoaching('${s.id}')">
+      <div class="card-top">
+        <div class="card-client">${esc(s.clientName)} <span class="card-contact">(${esc(s.contactMethod)})</span></div>
+      </div>
+      <div class="card-row">
+        <span class="card-tag">${esc(s.service)}</span>
+        <span class="card-price">${formatMoney(s.price)}</span>
+        ${payLabel ? `<span class="payment-badge ${payClass}">${payLabel}</span>` : ''}
+      </div>
+      <div class="card-dates">
+        <div class="card-date">When: <span>${s.date||'TBD'} ${s.time||''}</span></div>
+      </div>
+      ${s.topic ? `<div class="card-tasks"><div class="card-tasks-label">Topic</div><div class="card-tasks-text" style="color:var(--text);font-style:normal;">${esc(s.topic)}</div></div>` : ''}
+      ${s.notes ? `<div class="card-tasks" style="margin-top:6px;"><div class="card-tasks-label">Notes</div><div style="font-size:0.72rem;color:var(--text);">${esc(s.notes)}</div></div>` : ''}
+    </div>`;
+  }).join('');
+}
+
+// ═══════════════════════════════════════════════
+// ONE-SHOTS + MATCHMAKING
+// ═══════════════════════════════════════════════
+const MATCH_TAGS = ['Humor/Comedy','Horror/Dark','Chill/Low-Stakes','High-Stakes/Tactical',
+  'LGBTQ+ Friendly','Beginner Friendly','Experienced Players Only','Roleplay-Heavy',
+  'Combat-Heavy','Puzzle/Mystery'];
+
+function autoLogOneShotIncome(req) {
+  expenses = expenses.filter(e => e.autoId !== req.id);
+  const paid = req.paymentStatus === 'full' || req.paymentStatus === 'tip';
+  if (!paid) { save('vf_expenses', expenses); renderExpenses(); updateStats(); return; }
+
+  const desc = req.tipAmount
+    ? `${req.clientName} — One-Shot (incl. $${req.tipAmount} tip)`
+    : `${req.clientName} — One-Shot`;
+
+  expenses.push({
+    id: 'e_' + Date.now(),
+    autoId: req.id,
+    desc,
+    amount: req.price || 0,
+    type: 'income',
+    date: new Date().toISOString().split('T')[0],
+    auto: true,
+  });
+  save('vf_expenses', expenses);
+  renderExpenses();
+  updateStats();
+}
+
+function tagCheckboxesHtml(selectedTags) {
+  selectedTags = selectedTags || [];
+  return MATCH_TAGS.map(tag => `
+    <label style="display:flex;align-items:center;gap:6px;font-size:0.74rem;padding:4px 0;cursor:pointer;">
+      <input type="checkbox" class="oneshot-tag-cb" value="${tag}" ${selectedTags.includes(tag)?'checked':''}>
+      ${tag}
+    </label>`).join('');
+}
+
+function getCheckedTags() {
+  return Array.from(document.querySelectorAll('.oneshot-tag-cb:checked')).map(cb => cb.value);
+}
+
+function openNewOneShot() {
+  showModal(`
+    <div class="modal modal-large">
+      <div class="modal-title">New One-Shot Request</div>
+      <div class="modal-2col">
+        <div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Name / Group</label>
+              <input class="form-input" id="os-name" placeholder="Solo or group name">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Contact Method</label>
+              <input class="form-input" id="os-contact" placeholder="Discord / Email">
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">What are they looking for?</label>
+            <textarea class="form-textarea" id="os-looking" placeholder="Tone, system, themes, anything specific..."></textarea>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Price ($)</label>
+              <input class="form-input" id="os-price" type="number" placeholder="0.00">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Payment Status</label>
+              <select class="form-select" id="os-pay">
+                <option value="">— Not Yet —</option>
+                <option value="partial">Partial</option>
+                <option value="full">Paid in Full</option>
+                <option value="tip">Tip Added</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Scheduled?</label>
+              <select class="form-select" id="os-scheduled">
+                <option value="no">Not yet</option>
+                <option value="yes">Yes</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Party Status</label>
+              <select class="form-select" id="os-party">
+                <option value="needs-matchmaking">Needs Matchmaking</option>
+                <option value="full-party">Full Party</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Session Prepped?</label>
+            <select class="form-select" id="os-prepped">
+              <option value="no">Not yet</option>
+              <option value="yes">Yes</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">If not prepped, what's left to do?</label>
+            <input class="form-input" id="os-prep-tasks" placeholder="e.g. build encounter, print maps...">
+          </div>
+        </div>
+        <div class="modal-2col-divider">
+          <div class="form-readonly-label" style="font-size:0.68rem;margin-bottom:10px;color:var(--teal);">Vibe Tags (select all that fit)</div>
+          ${tagCheckboxesHtml([])}
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn" onclick="closeModal()">Cancel</button>
+        <button class="btn btn-teal" onclick="saveNewOneShot()">Add Request</button>
+      </div>
+    </div>`);
+}
+
+function saveNewOneShot() {
+  const name = document.getElementById('os-name').value.trim();
+  if (!name) return alert('Name/Group required.');
+  const req = {
+    id: 'os_' + Date.now(),
+    clientName: name,
+    contactMethod: document.getElementById('os-contact').value.trim() || 'Discord',
+    looking: document.getElementById('os-looking').value.trim(),
+    price: parseFloat(document.getElementById('os-price').value) || 0,
+    paymentStatus: document.getElementById('os-pay').value,
+    scheduled: document.getElementById('os-scheduled').value === 'yes',
+    partyStatus: document.getElementById('os-party').value,
+    prepped: document.getElementById('os-prepped').value === 'yes',
+    prepTasks: document.getElementById('os-prep-tasks').value.trim(),
+    tags: getCheckedTags(),
+  };
+  oneShots.push(req);
+  save('vf_oneshots', oneShots);
+  autoLogOneShotIncome(req);
+  closeModal();
+  renderOneShotMini();
+  renderOneShotFull();
+}
+
+function openEditOneShot(id) {
+  const r = oneShots.find(x => x.id === id);
+  if (!r) return;
+  showModal(`
+    <div class="modal modal-large">
+      <div class="modal-title">Edit One-Shot — ${esc(r.clientName)}</div>
+      <div class="modal-2col">
+        <div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Name / Group</label>
+              <input class="form-input" id="os-name" value="${esc(r.clientName)}">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Contact Method</label>
+              <input class="form-input" id="os-contact" value="${esc(r.contactMethod)}">
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">What are they looking for?</label>
+            <textarea class="form-textarea" id="os-looking">${esc(r.looking||'')}</textarea>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Price ($)</label>
+              <input class="form-input" id="os-price" type="number" value="${r.price||0}">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Payment Status</label>
+              <select class="form-select" id="os-pay">
+                <option value="" ${!r.paymentStatus?'selected':''}>— Not Yet —</option>
+                <option value="partial" ${r.paymentStatus==='partial'?'selected':''}>Partial</option>
+                <option value="full" ${r.paymentStatus==='full'?'selected':''}>Paid in Full</option>
+                <option value="tip" ${r.paymentStatus==='tip'?'selected':''}>Tip Added</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Scheduled?</label>
+              <select class="form-select" id="os-scheduled">
+                <option value="no" ${!r.scheduled?'selected':''}>Not yet</option>
+                <option value="yes" ${r.scheduled?'selected':''}>Yes</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Party Status</label>
+              <select class="form-select" id="os-party">
+                <option value="needs-matchmaking" ${r.partyStatus==='needs-matchmaking'?'selected':''}>Needs Matchmaking</option>
+                <option value="full-party" ${r.partyStatus==='full-party'?'selected':''}>Full Party</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Session Prepped?</label>
+            <select class="form-select" id="os-prepped">
+              <option value="no" ${!r.prepped?'selected':''}>Not yet</option>
+              <option value="yes" ${r.prepped?'selected':''}>Yes</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">If not prepped, what's left to do?</label>
+            <input class="form-input" id="os-prep-tasks" value="${esc(r.prepTasks||'')}">
+          </div>
+        </div>
+        <div class="modal-2col-divider">
+          <div class="form-readonly-label" style="font-size:0.68rem;margin-bottom:10px;color:var(--teal);">Vibe Tags</div>
+          ${tagCheckboxesHtml(r.tags)}
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn" style="color:var(--danger);border-color:var(--danger);" onclick="deleteOneShot('${r.id}');closeModal()">Delete</button>
+        <button class="btn" onclick="closeModal()">Cancel</button>
+        <button class="btn btn-teal" onclick="saveOneShotEdit('${r.id}')">Save</button>
+      </div>
+    </div>`);
+}
+
+function saveOneShotEdit(id) {
+  const r = oneShots.find(x => x.id === id);
+  if (!r) return;
+  r.clientName = document.getElementById('os-name').value.trim() || r.clientName;
+  r.contactMethod = document.getElementById('os-contact').value.trim();
+  r.looking = document.getElementById('os-looking').value.trim();
+  r.price = parseFloat(document.getElementById('os-price').value) || 0;
+  r.paymentStatus = document.getElementById('os-pay').value;
+  r.scheduled = document.getElementById('os-scheduled').value === 'yes';
+  r.partyStatus = document.getElementById('os-party').value;
+  r.prepped = document.getElementById('os-prepped').value === 'yes';
+  r.prepTasks = document.getElementById('os-prep-tasks').value.trim();
+  r.tags = getCheckedTags();
+  save('vf_oneshots', oneShots);
+  autoLogOneShotIncome(r);
+  closeModal();
+  renderOneShotMini();
+  renderOneShotFull();
+}
+
+function deleteOneShot(id) {
+  oneShots = oneShots.filter(r => r.id !== id);
+  expenses = expenses.filter(e => e.autoId !== id);
+  save('vf_oneshots', oneShots);
+  save('vf_expenses', expenses);
+  renderOneShotMini();
+  renderOneShotFull();
+  renderExpenses();
+  updateStats();
+}
+
+function renderOneShotMini() {
+  const el = document.getElementById('mini-oneshot-list');
+  if (!el) return;
+  const open = oneShots.filter(r => r.partyStatus === 'needs-matchmaking' || !r.scheduled).slice(0, 5);
+  if (open.length === 0) {
+    el.innerHTML = '<div class="empty-state" style="padding:8px 0;font-size:0.7rem;">Queue is clear.</div>';
+    return;
+  }
+  el.innerHTML = open.map(r => `
+    <div class="mini-card" onclick="switchPageByName('matchmaking')">
+      <div class="mini-card-top">
+        <span class="mini-card-name">${esc(r.clientName)}</span>
+      </div>
+      <div class="mini-card-sub">${esc((r.looking||'').slice(0,50))}${r.looking && r.looking.length>50?'...':''}</div>
+      <div class="status-dots">
+        <span class="status-dot ${r.scheduled?'on':''}">${r.scheduled?'✓ Scheduled':'Unscheduled'}</span>
+        <span class="status-dot ${r.prepped?'on':''}">${r.prepped?'✓ Prepped':'Not Prepped'}</span>
+      </div>
+    </div>`).join('');
+}
+
+// Find matches by tag overlap for a given one-shot request
+function findMatches(reqId) {
+  const target = oneShots.find(r => r.id === reqId);
+  if (!target || !target.tags || target.tags.length === 0) return [];
+  return oneShots
+    .filter(r => r.id !== reqId && r.partyStatus === 'needs-matchmaking')
+    .map(r => ({
+      req: r,
+      overlap: (r.tags||[]).filter(t => target.tags.includes(t)).length
+    }))
+    .filter(m => m.overlap > 0)
+    .sort((a,b) => b.overlap - a.overlap);
+}
+
+function renderOneShotFull() {
+  const el = document.getElementById('oneshot-full-list');
+  if (!el) return;
+  if (oneShots.length === 0) {
+    el.innerHTML = '<div class="empty-state">No one-shot requests yet.</div>';
+    return;
+  }
+  el.innerHTML = oneShots.map(r => {
+    const matches = r.partyStatus === 'needs-matchmaking' ? findMatches(r.id) : [];
+    const hasMatch = matches.length > 0;
+    const payLabel = r.paymentStatus ? (PAY_LABELS[r.paymentStatus]||'') : '';
+    const payClass = r.paymentStatus ? (PAY_CLASSES[r.paymentStatus]||'') : '';
+
+    return `<div class="comm-card ${hasMatch ? 'match-highlight' : 'active-card'}" onclick="openEditOneShot('${r.id}')">
+      <div class="card-top">
+        <div class="card-client">${esc(r.clientName)} <span class="card-contact">(${esc(r.contactMethod)})</span></div>
+        ${hasMatch ? `<span class="card-stage" style="background:var(--gold-ghost);color:var(--gold);border:1px solid var(--border-gold);">🔗 ${matches.length} Match${matches.length>1?'es':''}</span>` : ''}
+      </div>
+      ${r.looking ? `<div style="font-size:0.74rem;color:var(--text-dim);margin-bottom:6px;">${esc(r.looking)}</div>` : ''}
+      <div class="card-row">
+        <span class="card-price">${formatMoney(r.price)}</span>
+        ${payLabel ? `<span class="payment-badge ${payClass}">${payLabel}</span>` : ''}
+      </div>
+      <div class="status-dots" style="margin-bottom:6px;">
+        <span class="status-dot ${r.scheduled?'on':''}">${r.scheduled?'✓ Scheduled':'Unscheduled'}</span>
+        <span class="status-dot ${r.prepped?'on':''}">${r.prepped?'✓ Prepped':'Not Prepped'}</span>
+        <span class="status-dot ${r.partyStatus==='full-party'?'on':''}">${r.partyStatus==='full-party'?'Full Party':'Needs Players'}</span>
+      </div>
+      <div style="margin-bottom:6px;">${(r.tags||[]).map(t => `<span class="tag-badge">${esc(t)}</span>`).join('')}</div>
+      ${r.prepTasks ? `<div class="card-tasks"><div class="card-tasks-label">Prep Left To Do</div><div class="card-tasks-text">${esc(r.prepTasks)}</div></div>` : ''}
+      ${hasMatch ? `<div class="card-tasks" style="margin-top:6px;border-top:1px solid var(--border-gold);"><div class="card-tasks-label" style="color:var(--gold-dim);">Potential Matches</div>
+        ${matches.slice(0,3).map(m => `<div style="font-size:0.72rem;color:var(--text);margin-top:2px;">• ${esc(m.req.clientName)} (${m.overlap} tag${m.overlap>1?'s':''} in common)</div>`).join('')}
+      </div>` : ''}
+    </div>`;
+  }).join('');
+}
+
 renderBoard();
 renderReminders();
 renderTodoCats();
 renderTodos();
 renderCalendar();
 renderExpenses();
+renderCoachingMini();
+renderCoachingFull();
+renderOneShotMini();
+renderOneShotFull();
 
 // Set today's date on expense form
 document.getElementById('exp-date').value = new Date().toISOString().split('T')[0];
