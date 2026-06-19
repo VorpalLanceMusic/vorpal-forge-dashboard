@@ -1702,11 +1702,16 @@ function toggleTipField(rowId, value) {
 }
 
 function openNewCommission() {
-  const active = commissions.filter(c => c.slot === 'active').length;
-  const slot = active < 3 ? 'active' : 'waitlist';
   showModal(`
     <div class="modal">
-      <div class="modal-title">New Commission ${slot === 'waitlist' ? '(→ Waitlist)' : ''}</div>
+      <div class="modal-title">New Commission</div>
+      <div class="form-group">
+        <label class="form-label">Add To</label>
+        <select class="form-select" id="nc-slot">
+          <option value="waitlist">Waitlist</option>
+          <option value="active">Active (skip the line)</option>
+        </select>
+      </div>
       <div class="form-row">
         <div class="form-group">
           <label class="form-label">Client Name</label>
@@ -1768,7 +1773,7 @@ function openNewCommission() {
       </div>
       <div class="modal-actions">
         <button class="btn" onclick="closeModal()">Cancel</button>
-        <button class="btn btn-teal" onclick="saveNewCommission('${slot}')">Add Commission</button>
+        <button class="btn btn-teal" onclick="saveNewCommission()">Add Commission</button>
       </div>
     </div>`);
 }
@@ -1804,15 +1809,24 @@ function autoLogIncome(c, prevPayStatus) {
   updateStats();
 }
 
-function saveNewCommission(slot) {
+function saveNewCommission() {
+  const slot = document.getElementById('nc-slot').value;
   const name = document.getElementById('nc-name').value.trim();
   if (!name) return alert('Client name required.');
+  if (slot === 'active') {
+    const activeNow = commissions.filter(c => c.slot === 'active' && c.stage !== 'delivered').length;
+    if (activeNow >= 3) {
+      alert("All 3 active slots are full. This will be added to Waitlist instead.");
+    }
+  }
   const basePrice = parseFloat(document.getElementById('nc-price').value) || 0;
   const tipAmount = parseFloat(document.getElementById('nc-tip')?.value) || 0;
   const payStatus = document.getElementById('nc-pay').value;
+  const activeNow2 = commissions.filter(c => c.slot === 'active' && c.stage !== 'delivered').length;
+  const finalSlot = (slot === 'active' && activeNow2 >= 3) ? 'waitlist' : slot;
   const c = {
     id: 'c_' + Date.now(),
-    slot,
+    slot: finalSlot,
     clientName: name,
     contactMethod: document.getElementById('nc-contact').value.trim() || 'Discord',
     type: document.getElementById('nc-type').value,
