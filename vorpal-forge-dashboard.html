@@ -1,0 +1,2680 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vorpal Forge — Mission Control</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap');
+
+  :root {
+    --teal: #00d4c8;
+    --teal-dim: #00a89e;
+    --teal-ghost: rgba(0, 212, 200, 0.12);
+    --teal-glow: rgba(0, 212, 200, 0.35);
+    --gold: #f0c040;
+    --gold-dim: #c49a20;
+    --gold-ghost: rgba(240, 192, 64, 0.12);
+    --gold-glow: rgba(240, 192, 64, 0.3);
+    --bg: #0a0c10;
+    --bg-panel: #0f1218;
+    --bg-card: #141820;
+    --bg-card-hover: #1a2030;
+    --border: rgba(0, 212, 200, 0.18);
+    --border-gold: rgba(240, 192, 64, 0.2);
+    --text: #e8eaf0;
+    --text-dim: #8a9ab0;
+    --text-ghost: #4a5a70;
+    --danger: #e05555;
+    --success: #55cc88;
+    --radius: 10px;
+    --radius-sm: 6px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Inter', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+    position: relative;
+  }
+
+  /* ── BACKGROUND WAVEFORM CANVAS ── */
+  #bg-canvas {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.45;
+  }
+
+  /* ── LAYOUT ── */
+  .app-shell {
+    position: relative;
+    z-index: 1;
+    display: grid;
+    grid-template-rows: auto 1fr auto;
+    min-height: 100vh;
+    padding: 16px;
+    gap: 14px;
+  }
+
+  /* Header */
+  .app-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 18px;
+    background: rgba(10, 12, 16, 0.8);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    backdrop-filter: blur(12px);
+  }
+
+  .app-title {
+    font-family: 'Cinzel', serif;
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--teal);
+    letter-spacing: 0.12em;
+    text-shadow: 0 0 20px var(--teal-glow);
+  }
+
+  .app-title span {
+    color: var(--gold);
+  }
+
+  .header-stats {
+    display: flex;
+    gap: 20px;
+    font-size: 0.75rem;
+    color: var(--text-dim);
+  }
+
+  .header-stat strong {
+    color: var(--teal);
+    font-weight: 600;
+  }
+
+  /* Main top section: stats col + commissions + reminders col */
+  .top-section {
+    display: grid;
+    grid-template-columns: 200px 1fr 220px;
+    gap: 14px;
+    min-height: 0;
+  }
+
+  /* Bottom section */
+  .bottom-section {
+    display: grid;
+    grid-template-columns: 1fr 280px 260px;
+    gap: 14px;
+  }
+
+  /* ── PANELS ── */
+  .panel {
+    background: rgba(15, 18, 24, 0.85);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    backdrop-filter: blur(10px);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .panel-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+
+  .panel-title {
+    font-family: 'Cinzel', serif;
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.15em;
+    color: var(--teal);
+    text-transform: uppercase;
+  }
+
+  .panel-body {
+    padding: 12px;
+    overflow-y: auto;
+    flex: 1;
+  }
+
+  .panel-body::-webkit-scrollbar { width: 4px; }
+  .panel-body::-webkit-scrollbar-track { background: transparent; }
+  .panel-body::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+  /* ── QUICK STATS (left col) ── */
+  .stat-block {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .stat-item {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 10px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+  }
+
+  .stat-label {
+    font-size: 0.65rem;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+  }
+
+  .stat-value {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 1.4rem;
+    font-weight: 500;
+    color: var(--teal);
+    text-shadow: 0 0 12px var(--teal-glow);
+  }
+
+  .stat-value.gold { color: var(--gold); text-shadow: 0 0 12px var(--gold-glow); }
+  .stat-sub { font-size: 0.65rem; color: var(--text-ghost); }
+
+  /* ── COMMISSION BOARD ── */
+  .commission-board {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
+
+  .board-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 14px;
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+
+  .board-3col {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 0;
+    flex: 1;
+    overflow: hidden;
+  }
+
+  .board-col {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    border-right: 1px solid var(--border);
+  }
+
+  .board-col:last-child { border-right: none; }
+
+  .board-col-header {
+    padding: 7px 12px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-shrink: 0;
+  }
+
+  .board-col-title {
+    font-size: 0.65rem;
+    font-family: 'Cinzel', serif;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+
+  .board-col-title.teal { color: var(--teal); }
+  .board-col-title.gold { color: var(--gold); }
+  .board-col-title.green { color: var(--success); }
+
+  .board-col-body {
+    padding: 10px;
+    overflow-y: auto;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .slot-label {
+    font-size: 0.62rem;
+    color: var(--text-ghost);
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    margin-bottom: 6px;
+    padding-left: 2px;
+  }
+
+  /* Commission Cards */
+  .comm-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 11px;
+    position: relative;
+    transition: all 0.2s;
+    cursor: pointer;
+  }
+
+  .comm-card:hover {
+    border-color: var(--teal-dim);
+    background: var(--bg-card-hover);
+    box-shadow: 0 0 14px var(--teal-ghost);
+  }
+
+  .comm-card.active-card {
+    border-left: 3px solid var(--teal);
+  }
+
+  .comm-card.waitlist-card {
+    border-left: 3px solid var(--gold-dim);
+    opacity: 0.85;
+  }
+
+  .card-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 8px;
+  }
+
+  .card-client {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text);
+  }
+
+  .card-contact {
+    font-size: 0.72rem;
+    color: var(--text-ghost);
+    font-weight: 400;
+  }
+
+  .card-stage {
+    font-size: 0.62rem;
+    padding: 2px 7px;
+    border-radius: 20px;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    white-space: nowrap;
+  }
+
+  .stage-received { background: var(--gold-ghost); color: var(--gold); border: 1px solid var(--border-gold); }
+  .stage-in-progress { background: rgba(0, 150, 200, 0.15); color: #40b8e0; border: 1px solid rgba(64, 184, 224, 0.25); }
+  .stage-revision { background: rgba(200, 100, 0, 0.15); color: #e08040; border: 1px solid rgba(224, 128, 64, 0.25); }
+  .stage-delivered { background: rgba(85, 204, 136, 0.15); color: var(--success); border: 1px solid rgba(85, 204, 136, 0.25); }
+
+  .card-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 5px;
+    gap: 6px;
+  }
+
+  .card-tag {
+    font-size: 0.62rem;
+    padding: 2px 6px;
+    background: var(--teal-ghost);
+    color: var(--teal-dim);
+    border-radius: 20px;
+    border: 1px solid var(--border);
+  }
+
+  .card-price {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.8rem;
+    color: var(--gold);
+    font-weight: 500;
+  }
+
+  .payment-badge {
+    font-size: 0.6rem;
+    padding: 1px 6px;
+    border-radius: 20px;
+    font-weight: 600;
+  }
+
+  .pay-partial { background: rgba(200, 100, 0, 0.15); color: #e08040; border: 1px solid rgba(224, 128, 64, 0.2); }
+  .pay-full { background: rgba(85, 204, 136, 0.15); color: var(--success); border: 1px solid rgba(85, 204, 136, 0.2); }
+  .pay-tip { background: rgba(240, 192, 64, 0.15); color: var(--gold); border: 1px solid var(--border-gold); }
+
+  .card-dates {
+    display: flex;
+    gap: 10px;
+    margin-top: 6px;
+  }
+
+  .card-date {
+    font-size: 0.63rem;
+    color: var(--text-ghost);
+  }
+
+  .card-date span { color: var(--text-dim); }
+
+  .card-tasks {
+    margin-top: 7px;
+    padding-top: 7px;
+    border-top: 1px solid var(--border);
+  }
+
+  .card-tasks-label {
+    font-size: 0.6rem;
+    color: var(--text-ghost);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-bottom: 3px;
+  }
+
+  .card-tasks-text {
+    font-size: 0.72rem;
+    color: #e07050;
+    font-style: italic;
+  }
+
+  .empty-slot {
+    background: var(--bg-card);
+    border: 1px dashed var(--border);
+    border-radius: var(--radius-sm);
+    height: 160px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 6px;
+    cursor: pointer;
+    transition: all 0.2s;
+    color: var(--text-ghost);
+    font-size: 0.72rem;
+  }
+
+  .empty-slot:hover {
+    border-color: var(--teal-dim);
+    color: var(--teal-dim);
+  }
+
+  .empty-slot-icon { font-size: 1.4rem; opacity: 0.4; }
+
+  /* Waitlist section */
+  .waitlist-section { margin-top: 4px; }
+  .waitlist-header {
+    font-size: 0.62rem;
+    color: var(--text-ghost);
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .waitlist-count {
+    background: var(--gold-ghost);
+    color: var(--gold-dim);
+    border-radius: 20px;
+    padding: 1px 6px;
+    font-size: 0.6rem;
+    border: 1px solid var(--border-gold);
+  }
+
+  .waitlist-cards {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .waitlist-card-collapsed {
+    background: var(--bg-card);
+    border: 1px solid var(--border-gold);
+    border-left: 3px solid var(--gold-dim);
+    border-radius: var(--radius-sm);
+    padding: 8px 11px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-size: 0.78rem;
+  }
+
+  .waitlist-card-collapsed:hover { background: var(--bg-card-hover); }
+
+  .wc-left { display: flex; align-items: center; gap: 10px; }
+  .wc-name { font-weight: 600; }
+  .wc-tag { font-size: 0.62rem; color: var(--text-dim); }
+  .wc-expand { font-size: 0.7rem; color: var(--text-ghost); }
+
+  /* ── REMINDERS (right col) ── */
+  .reminder-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .reminder-item {
+    background: var(--bg-card);
+    border: 1px solid var(--border-gold);
+    border-left: 3px solid var(--gold);
+    border-radius: var(--radius-sm);
+    padding: 8px 10px;
+    font-size: 0.75rem;
+    color: var(--text);
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 6px;
+    transition: all 0.2s;
+  }
+
+  .reminder-item:hover { background: var(--bg-card-hover); }
+
+  .reminder-text { flex: 1; line-height: 1.4; }
+
+  .reminder-del {
+    background: none;
+    border: none;
+    color: var(--text-ghost);
+    cursor: pointer;
+    font-size: 0.8rem;
+    padding: 0;
+    line-height: 1;
+    transition: color 0.2s;
+    flex-shrink: 0;
+  }
+
+  .reminder-del:hover { color: var(--danger); }
+
+  .reminder-add {
+    display: flex;
+    gap: 6px;
+    margin-top: 8px;
+  }
+
+  .reminder-input {
+    flex: 1;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 6px 9px;
+    color: var(--text);
+    font-size: 0.72rem;
+    font-family: 'Inter', sans-serif;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+
+  .reminder-input:focus { border-color: var(--teal-dim); }
+  .reminder-input::placeholder { color: var(--text-ghost); }
+
+  /* ── BUTTONS ── */
+  .btn {
+    background: none;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--text-dim);
+    font-size: 0.7rem;
+    font-family: 'Inter', sans-serif;
+    padding: 5px 10px;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+  }
+
+  .btn:hover { border-color: var(--teal-dim); color: var(--teal); }
+
+  .btn-teal {
+    background: var(--teal-ghost);
+    border-color: var(--teal-dim);
+    color: var(--teal);
+  }
+
+  .btn-teal:hover { background: rgba(0, 212, 200, 0.2); box-shadow: 0 0 10px var(--teal-ghost); }
+
+  .btn-gold {
+    background: var(--gold-ghost);
+    border-color: var(--gold-dim);
+    color: var(--gold);
+  }
+
+  .btn-sm { padding: 3px 8px; font-size: 0.65rem; }
+
+  .btn-icon {
+    background: none;
+    border: none;
+    color: var(--text-ghost);
+    cursor: pointer;
+    font-size: 0.75rem;
+    padding: 3px 5px;
+    border-radius: 4px;
+    transition: all 0.2s;
+  }
+
+  .btn-icon:hover { color: var(--teal); background: var(--teal-ghost); }
+
+  /* ── CALENDAR ── */
+  .calendar-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 4px;
+    flex: 1;
+  }
+
+  .cal-day {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    min-height: 100px;
+  }
+
+  .cal-day-header {
+    font-size: 0.62rem;
+    color: var(--text-ghost);
+    text-align: center;
+    padding: 3px 0;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .cal-day-header.today { color: var(--teal); border-bottom-color: var(--teal); }
+
+  .cal-blocks {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    flex: 1;
+  }
+
+  .cal-block {
+    padding: 4px 6px;
+    border-radius: 4px;
+    font-size: 0.63rem;
+    cursor: grab;
+    transition: all 0.15s;
+    border: 1px solid transparent;
+    line-height: 1.3;
+    user-select: none;
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+  }
+
+  .cal-block-time {
+    font-size: 0.58rem;
+    opacity: 0.75;
+    letter-spacing: 0.02em;
+  }
+
+  .cal-block-label {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 4px;
+  }
+
+  .cal-block:hover { filter: brightness(1.2); }
+  .cal-block:active { cursor: grabbing; }
+
+  .cal-block.stream { background: rgba(0, 150, 200, 0.2); color: #60c8e8; border-color: rgba(64, 184, 224, 0.2); }
+  .cal-block.music { background: rgba(160, 80, 200, 0.2); color: #c080e8; border-color: rgba(160, 80, 200, 0.2); }
+  .cal-block.coaching { background: var(--gold-ghost); color: var(--gold); border-color: var(--border-gold); }
+  .cal-block.admin { background: rgba(100, 100, 120, 0.2); color: #8888aa; border-color: rgba(100, 100, 120, 0.2); }
+  .cal-block.family { background: rgba(85, 204, 136, 0.15); color: #80cc99; border-color: rgba(85, 204, 136, 0.15); }
+
+  .cal-add {
+    font-size: 0.65rem;
+    color: var(--text-ghost);
+    text-align: center;
+    padding: 3px;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: all 0.2s;
+    border: 1px dashed transparent;
+  }
+
+  .cal-add:hover { border-color: var(--border); color: var(--text-dim); }
+
+  .cal-actions {
+    display: flex;
+    gap: 6px;
+    flex-shrink: 0;
+    align-items: center;
+  }
+
+  /* ── TODO ── */
+  .todo-categories {
+    display: flex;
+    gap: 4px;
+    flex-wrap: wrap;
+    margin-bottom: 10px;
+  }
+
+  .todo-cat-tab {
+    font-size: 0.62rem;
+    padding: 3px 8px;
+    border-radius: 20px;
+    cursor: pointer;
+    border: 1px solid var(--border);
+    color: var(--text-ghost);
+    background: none;
+    font-family: 'Inter', sans-serif;
+    transition: all 0.2s;
+  }
+
+  .todo-cat-tab.active, .todo-cat-tab:hover { border-color: var(--teal-dim); color: var(--teal); background: var(--teal-ghost); }
+
+  .todo-list {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .todo-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 7px;
+    padding: 7px 9px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    transition: all 0.2s;
+    group: true;
+  }
+
+  .todo-item:hover { background: var(--bg-card-hover); }
+
+  .todo-check {
+    width: 14px;
+    height: 14px;
+    border-radius: 3px;
+    border: 1px solid var(--border);
+    background: none;
+    cursor: pointer;
+    flex-shrink: 0;
+    margin-top: 1px;
+    transition: all 0.2s;
+    appearance: none;
+    -webkit-appearance: none;
+    position: relative;
+  }
+
+  .todo-check:checked {
+    background: var(--teal);
+    border-color: var(--teal);
+  }
+
+  .todo-check:checked::after {
+    content: '✓';
+    position: absolute;
+    top: -1px;
+    left: 1px;
+    font-size: 10px;
+    color: var(--bg);
+    font-weight: 700;
+  }
+
+  .todo-text {
+    font-size: 0.75rem;
+    flex: 1;
+    line-height: 1.4;
+    color: var(--text);
+  }
+
+  .todo-text.done { text-decoration: line-through; color: var(--text-ghost); }
+
+  .todo-meta {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+
+  .priority-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .priority-high { background: var(--danger); box-shadow: 0 0 6px rgba(224, 85, 85, 0.5); }
+  .priority-med { background: var(--gold); box-shadow: 0 0 6px var(--gold-glow); }
+  .priority-low { background: var(--text-ghost); }
+
+  .todo-add-row {
+    display: flex;
+    gap: 5px;
+    margin-top: 8px;
+  }
+
+  .todo-input {
+    flex: 1;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 5px 8px;
+    color: var(--text);
+    font-size: 0.72rem;
+    font-family: 'Inter', sans-serif;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+
+  .todo-input:focus { border-color: var(--teal-dim); }
+  .todo-input::placeholder { color: var(--text-ghost); }
+
+  .priority-select {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 5px 7px;
+    color: var(--text-dim);
+    font-size: 0.68rem;
+    font-family: 'Inter', sans-serif;
+    outline: none;
+    cursor: pointer;
+    width: 60px;
+  }
+
+  /* ── EXPENSES ── */
+  .expense-summary {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+    margin-bottom: 10px;
+  }
+
+  .exp-sum-item {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 8px 10px;
+    text-align: center;
+  }
+
+  .exp-sum-label { font-size: 0.6rem; color: var(--text-ghost); text-transform: uppercase; letter-spacing: 0.1em; }
+  .exp-sum-value { font-family: 'JetBrains Mono', monospace; font-size: 1rem; color: var(--teal); margin-top: 2px; }
+  .exp-sum-value.negative { color: var(--danger); }
+
+  .expense-list {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin-bottom: 8px;
+    max-height: 120px;
+    overflow-y: auto;
+  }
+
+  .expense-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 5px 8px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    font-size: 0.72rem;
+    gap: 8px;
+  }
+
+  .exp-desc { flex: 1; color: var(--text); }
+  .exp-amount { font-family: 'JetBrains Mono', monospace; font-weight: 500; }
+  .exp-amount.income { color: var(--success); }
+  .exp-amount.expense { color: var(--danger); }
+  .exp-date { color: var(--text-ghost); font-size: 0.65rem; }
+
+  .exp-add-row {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .exp-row {
+    display: flex;
+    gap: 4px;
+  }
+
+  .exp-input {
+    flex: 1;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 5px 8px;
+    color: var(--text);
+    font-size: 0.7rem;
+    font-family: 'Inter', sans-serif;
+    outline: none;
+    min-width: 0;
+    transition: border-color 0.2s;
+  }
+
+  .exp-input:focus { border-color: var(--teal-dim); }
+  .exp-input::placeholder { color: var(--text-ghost); }
+
+  .exp-type-select {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 5px 7px;
+    color: var(--text-dim);
+    font-size: 0.68rem;
+    font-family: 'Inter', sans-serif;
+    outline: none;
+    cursor: pointer;
+    width: 85px;
+    flex-shrink: 0;
+  }
+
+  /* ── PRAISE OVERLAY ── */
+  .praise-overlay {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    pointer-events: none;
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .praise-popup {
+    background: rgba(10, 12, 16, 0.92);
+    border: 1px solid var(--teal);
+    border-radius: var(--radius);
+    padding: 20px 32px;
+    text-align: center;
+    backdrop-filter: blur(20px);
+    box-shadow: 0 0 40px var(--teal-glow), 0 0 80px rgba(0, 212, 200, 0.1);
+    animation: praiseIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), praiseOut 0.3s ease-in 1.7s forwards;
+    transform-origin: center;
+  }
+
+  .praise-text {
+    font-family: 'Cinzel', serif;
+    font-size: 1.4rem;
+    color: var(--teal);
+    text-shadow: 0 0 20px var(--teal-glow);
+  }
+
+  .praise-sub {
+    font-size: 0.72rem;
+    color: var(--text-dim);
+    margin-top: 4px;
+  }
+
+  @keyframes praiseIn {
+    from { opacity: 0; transform: scale(0.7); }
+    to { opacity: 1; transform: scale(1); }
+  }
+
+  @keyframes praiseOut {
+    from { opacity: 1; transform: scale(1); }
+    to { opacity: 0; transform: scale(0.8); }
+  }
+
+  .particle {
+    position: fixed;
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 999;
+    animation: particleFly 2s ease-out forwards;
+  }
+
+  @keyframes particleFly {
+    0% { opacity: 1; transform: translate(0, 0) scale(1); }
+    100% { opacity: 0; transform: translate(var(--dx), var(--dy)) scale(0); }
+  }
+
+  /* ── MODAL ── */
+  .modal-backdrop {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background: rgba(5, 7, 12, 0.8);
+    z-index: 500;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    backdrop-filter: blur(4px);
+  }
+
+  .modal {
+    background: var(--bg-panel);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px;
+    width: 480px;
+    max-height: 80vh;
+    overflow-y: auto;
+    box-shadow: 0 0 40px rgba(0, 0, 0, 0.5);
+  }
+
+  .modal-title {
+    font-family: 'Cinzel', serif;
+    font-size: 0.9rem;
+    color: var(--teal);
+    margin-bottom: 16px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .form-group { margin-bottom: 12px; }
+
+  .form-label {
+    display: block;
+    font-size: 0.68rem;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 5px;
+  }
+
+  .form-input, .form-select, .form-textarea {
+    width: 100%;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 7px 10px;
+    color: var(--text);
+    font-size: 0.78rem;
+    font-family: 'Inter', sans-serif;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+
+  .form-input:focus, .form-select:focus, .form-textarea:focus { border-color: var(--teal-dim); }
+  .form-input::placeholder, .form-textarea::placeholder { color: var(--text-ghost); }
+
+  .form-textarea { resize: vertical; min-height: 70px; }
+
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+  .modal-actions {
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+    margin-top: 16px;
+    padding-top: 12px;
+    border-top: 1px solid var(--border);
+  }
+
+  /* ── PRAISE MANAGER ── */
+  .praise-manager-list {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    max-height: 300px;
+    overflow-y: auto;
+    margin-bottom: 10px;
+  }
+
+  .praise-manage-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 6px 10px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    font-size: 0.75rem;
+    gap: 8px;
+  }
+
+  .praise-ctx {
+    font-size: 0.62rem;
+    color: var(--text-ghost);
+    background: var(--bg);
+    padding: 1px 5px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    white-space: nowrap;
+  }
+
+  /* ── CONFIRM DIALOG ── */
+  .confirm-dialog {
+    background: var(--bg-panel);
+    border: 1px solid var(--border-gold);
+    border-radius: var(--radius);
+    padding: 20px;
+    width: 340px;
+    text-align: center;
+    box-shadow: 0 0 30px rgba(0, 0, 0, 0.5);
+  }
+
+  .confirm-title {
+    font-family: 'Cinzel', serif;
+    font-size: 0.85rem;
+    color: var(--gold);
+    margin-bottom: 8px;
+  }
+
+  .confirm-text {
+    font-size: 0.78rem;
+    color: var(--text-dim);
+    margin-bottom: 16px;
+    line-height: 1.5;
+  }
+
+  .confirm-actions { display: flex; gap: 8px; justify-content: center; }
+
+  /* Scrollbar global */
+  ::-webkit-scrollbar { width: 4px; height: 4px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+  /* Archive tab */
+  .archive-list {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+  }
+
+  .archive-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 7px 10px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    font-size: 0.75rem;
+    opacity: 0.65;
+    gap: 8px;
+  }
+
+  .archive-item:hover { opacity: 0.9; }
+
+  .section-divider {
+    height: 1px;
+    background: var(--border);
+    margin: 10px 0;
+  }
+
+  .empty-state {
+    text-align: center;
+    padding: 20px;
+    color: var(--text-ghost);
+    font-size: 0.75rem;
+    font-style: italic;
+  }
+
+</style>
+</head>
+<body>
+
+<canvas id="bg-canvas"></canvas>
+
+<div class="app-shell">
+
+  <!-- HEADER -->
+  <header class="app-header">
+    <div class="app-title">VORPAL <span>FORGE</span> — MISSION CONTROL</div>
+    <div class="header-stats">
+      <div class="header-stat">Active: <strong id="hdr-active">0</strong>/3</div>
+      <div class="header-stat">Waitlist: <strong id="hdr-wait">0</strong></div>
+      <div class="header-stat">Outstanding: <strong id="hdr-outstanding" class="gold">$0</strong></div>
+    </div>
+    <div style="display:flex;gap:6px;align-items:center;">
+      <span id="sync-status" style="font-size:0.65rem;color:var(--text-ghost);"></span>
+      <button class="btn btn-sm" id="sync-btn" onclick="syncFromSheet()">⟳ Sync Form Submissions</button>
+      <button class="btn btn-sm" onclick="openPraiseManager()">⚙ Praise Bank</button>
+    </div>
+  </header>
+
+  <!-- TOP SECTION -->
+  <div class="top-section">
+
+    <!-- QUICK STATS (left col) -->
+    <div class="panel">
+      <div class="panel-header">
+        <span class="panel-title">Quick Stats</span>
+      </div>
+      <div class="panel-body">
+        <div class="stat-block">
+          <div class="stat-item">
+            <div class="stat-label">Active Slots</div>
+            <div class="stat-value" id="stat-active">0</div>
+            <div class="stat-sub">of 3 max</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-label">Waitlist</div>
+            <div class="stat-value" id="stat-wait">0</div>
+            <div class="stat-sub">commissions queued</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-label">Total Unpaid</div>
+            <div class="stat-value" id="stat-unpaid" style="color:var(--danger);text-shadow:0 0 12px rgba(224,85,85,0.4);">$0</div>
+            <div class="stat-sub">outstanding balance</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-label">Next Due</div>
+            <div class="stat-value" id="stat-due" style="font-size:0.85rem;">—</div>
+            <div class="stat-sub" id="stat-due-name">no deadlines set</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-label">Completed This Month</div>
+            <div class="stat-value" id="stat-completed" style="color:var(--success);text-shadow:0 0 12px rgba(85,204,136,0.4);">0</div>
+            <div class="stat-sub" id="stat-completed-last" style="color:var(--text-ghost);font-style:italic;"></div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-label">This Month Income</div>
+            <div class="stat-value gold" id="stat-month">$0</div>
+            <div class="stat-sub" id="stat-month-last" style="color:var(--text-ghost);font-style:italic;"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- COMMISSION BOARD (center) -->
+    <div class="panel commission-board">
+      <div class="board-header">
+        <span class="panel-title">Commission Board</span>
+        <button class="btn btn-teal btn-sm" onclick="openNewCommission()">+ New Commission</button>
+      </div>
+      <div class="board-3col">
+        <div class="board-col">
+          <div class="board-col-header">
+            <span class="board-col-title gold">Waitlist</span>
+            <span id="col-wait-count" style="font-size:0.62rem;color:var(--text-ghost);">0</span>
+          </div>
+          <div class="board-col-body" id="col-waitlist"></div>
+        </div>
+        <div class="board-col">
+          <div class="board-col-header">
+            <span class="board-col-title teal">Active</span>
+            <span id="col-active-count" style="font-size:0.62rem;color:var(--text-ghost);">0/3</span>
+          </div>
+          <div class="board-col-body" id="col-active"></div>
+        </div>
+        <div class="board-col">
+          <div class="board-col-header">
+            <span class="board-col-title green">Delivered</span>
+            <div style="display:flex;align-items:center;gap:8px;">
+              <span id="col-delivered-count" style="font-size:0.62rem;color:var(--text-ghost);">0</span>
+              <button class="btn btn-sm" style="font-size:0.6rem;padding:2px 7px;" onclick="openArchiveModal()">Archive ↗</button>
+            </div>
+          </div>
+          <div class="board-col-body" id="col-delivered"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- REMINDERS (right col) -->
+    <div class="panel">
+      <div class="panel-header">
+        <span class="panel-title">📌 Reminders</span>
+        <span style="font-size:0.65rem;color:var(--text-ghost)">always-on sticky</span>
+      </div>
+      <div class="panel-body">
+        <div class="reminder-list" id="reminder-list"></div>
+        <div class="reminder-add">
+          <input type="text" class="reminder-input" id="reminder-input" placeholder="Add a reminder..." onkeydown="if(event.key==='Enter')addReminder()">
+          <button class="btn btn-teal btn-sm" onclick="addReminder()">+</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- BOTTOM SECTION -->
+  <div class="bottom-section">
+
+    <!-- WEEKLY CALENDAR -->
+    <div class="panel">
+      <div class="panel-header">
+        <span class="panel-title">Weekly Calendar</span>
+        <div class="cal-actions">
+          <button class="btn btn-sm" onclick="resetToDefault()">↺ Reset to Default</button>
+          <button class="btn btn-gold btn-sm" onclick="confirmSaveDefault()">💾 Save as Default</button>
+        </div>
+      </div>
+      <div class="panel-body" style="overflow:visible;">
+        <div class="calendar-grid" id="calendar-grid">
+          <!-- Rendered by JS -->
+        </div>
+      </div>
+    </div>
+
+    <!-- TO-DO LIST -->
+    <div class="panel">
+      <div class="panel-header">
+        <span class="panel-title">To-Do List</span>
+        <button class="btn-icon" onclick="openAddTodo()">+</button>
+      </div>
+      <div class="panel-body">
+        <div class="todo-categories" id="todo-cats"></div>
+        <div class="todo-list" id="todo-list"></div>
+      </div>
+    </div>
+
+    <!-- EXPENSES -->
+    <div class="panel">
+      <div class="panel-header">
+        <span class="panel-title">Expenses & Income</span>
+        <button class="btn btn-sm" onclick="exportTaxData()">↓ Export</button>
+      </div>
+      <div class="panel-body">
+        <div class="expense-summary">
+          <div class="exp-sum-item">
+            <div class="exp-sum-label">Income (YTD)</div>
+            <div class="exp-sum-value" id="exp-income">$0</div>
+          </div>
+          <div class="exp-sum-item">
+            <div class="exp-sum-label">Expenses (YTD)</div>
+            <div class="exp-sum-value negative" id="exp-expenses">$0</div>
+          </div>
+        </div>
+        <div class="expense-list" id="expense-list"></div>
+        <div class="exp-add-row">
+          <div class="exp-row">
+            <input type="text" class="exp-input" id="exp-desc" placeholder="Description..." style="flex:2;">
+            <input type="number" class="exp-input" id="exp-amount" placeholder="$0.00" style="width:80px;flex:none;">
+          </div>
+          <div class="exp-row">
+            <select class="exp-type-select" id="exp-type">
+              <option value="income">Income</option>
+              <option value="expense">Expense</option>
+            </select>
+            <input type="date" class="exp-input" id="exp-date" style="flex:1;">
+            <button class="btn btn-teal btn-sm" onclick="addExpense()">Add</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- PRAISE OVERLAY -->
+<div class="praise-overlay" id="praise-overlay" style="display:none;"></div>
+
+<!-- MODALS -->
+<div id="modal-backdrop" class="modal-backdrop" style="display:none;" onclick="closeModal(event)">
+  <div id="modal-content"></div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════
+// PRAISE BANK
+// ═══════════════════════════════════════════════
+let praiseBank = {
+  complete: [
+    { text: "Good boy! 🐾", sub: "Commission delivered." },
+    { text: "Look at you, a whole professional!", sub: "Absolutely cooked." },
+    { text: "THE FORGE PROVIDES.", sub: "And you delivered." },
+    { text: "Someone's getting a treat.", sub: "Well earned." },
+    { text: "Vorpal Forge: Actually does the thing.", sub: "Remarkable." },
+    { text: "Banger dropped. You're dangerous.", sub: "Go hydrate." },
+  ],
+  todo: [
+    { text: "Task annihilated.", sub: "Keep going." },
+    { text: "Check. ✓", sub: "One less thing in the way." },
+    { text: "Done? DONE. Beautiful.", sub: "You absolute unit." },
+    { text: "I'm so proud of you.", sub: "Seriously though." },
+    { text: "Look at you being productive.", sub: "Disgusting. I love it." },
+  ],
+  waitlistMove: [
+    { text: "Look at you go!", sub: "New slot, new music." },
+    { text: "Slot acquired.", sub: "The Hoard grows richer." },
+    { text: "Fresh commission, fresh chaos.", sub: "Let's get it." },
+  ],
+  expense: [
+    { text: "I'm so proud of you!", sub: "Logged and remembered." },
+    { text: "The accountant smiles upon you.", sub: "Future Vorpal says thanks." },
+    { text: "Money: tracked. You: responsible adult.", sub: "Mostly." },
+  ],
+  reminder: [
+    { text: "Noted, Maestro.", sub: "Won't forget." },
+    { text: "Added to the Wall of Concerns.", sub: "You've been warned." },
+  ]
+};
+
+function getRandomPraise(ctx) {
+  const pool = praiseBank[ctx] || praiseBank.todo;
+  return pool[Math.floor(Math.random() * pool.length)];
+}
+
+function showPraise(ctx) {
+  const p = getRandomPraise(ctx);
+  const overlay = document.getElementById('praise-overlay');
+  overlay.style.display = 'flex';
+  overlay.innerHTML = `
+    <div class="praise-popup">
+      <div class="praise-text">${p.text}</div>
+      ${p.sub ? `<div class="praise-sub">${p.sub}</div>` : ''}
+    </div>`;
+  spawnParticles();
+  setTimeout(() => { overlay.style.display = 'none'; }, 2200);
+}
+
+function spawnParticles() {
+  const colors = ['#00d4c8','#f0c040','#ffffff','#60c8e8','#c080e8'];
+  const cx = window.innerWidth / 2, cy = window.innerHeight / 2;
+  for (let i = 0; i < 30; i++) {
+    const el = document.createElement('div');
+    el.className = 'particle';
+    el.style.left = cx + 'px';
+    el.style.top = cy + 'px';
+    el.style.background = colors[Math.floor(Math.random() * colors.length)];
+    const angle = Math.random() * Math.PI * 2;
+    const dist = 80 + Math.random() * 200;
+    el.style.setProperty('--dx', Math.cos(angle) * dist + 'px');
+    el.style.setProperty('--dy', Math.sin(angle) * dist + 'px');
+    el.style.animationDuration = (0.8 + Math.random() * 1.2) + 's';
+    document.body.appendChild(el);
+    setTimeout(() => el.remove(), 2000);
+  }
+}
+
+// ═══════════════════════════════════════════════
+// DATA STORE (localStorage)
+// ═══════════════════════════════════════════════
+function load(key, def) {
+  try { const v = localStorage.getItem(key); return v ? JSON.parse(v) : def; } catch { return def; }
+}
+function save(key, val) {
+  try { localStorage.setItem(key, JSON.stringify(val)); } catch {}
+}
+
+let commissions = load('vf_commissions', []);
+let reminders = load('vf_reminders', []);
+let todos = load('vf_todos', []);
+let expenses = load('vf_expenses', []);
+let calDefault = load('vf_cal_default', {});
+let calCurrent = load('vf_cal_current', {});
+let currentTab = 'active';
+let activeTodoCat = 'all';
+
+// ═══════════════════════════════════════════════
+// BACKGROUND WAVEFORM
+// ═══════════════════════════════════════════════
+(function() {
+  const canvas = document.getElementById('bg-canvas');
+  const ctx = canvas.getContext('2d');
+  let W, H;
+  const waves = [];
+  const NUM_WAVES = 6;
+
+  for (let i = 0; i < NUM_WAVES; i++) {
+    waves.push({
+      y: 0.2 + (i / NUM_WAVES) * 0.7,
+      freq: 0.003 + Math.random() * 0.004,
+      amp: 12 + Math.random() * 30,
+      speed: 0.0008 + Math.random() * 0.001,
+      phase: Math.random() * Math.PI * 2,
+      color: i % 2 === 0 ? '#00d4c8' : '#f0c040',
+      alpha: 0.06 + Math.random() * 0.1,
+      thickness: 0.5 + Math.random() * 1.5,
+    });
+  }
+
+  // Particles
+  const parts = [];
+  for (let i = 0; i < 60; i++) {
+    parts.push({
+      x: Math.random(),
+      y: Math.random(),
+      r: 0.5 + Math.random() * 2,
+      vx: (Math.random() - 0.5) * 0.0002,
+      vy: -0.00008 - Math.random() * 0.00015,
+      alpha: 0.1 + Math.random() * 0.4,
+      color: Math.random() > 0.5 ? '#00d4c8' : '#f0c040',
+    });
+  }
+
+  function resize() {
+    W = canvas.width = window.innerWidth;
+    H = canvas.height = window.innerHeight;
+  }
+
+  function draw(t) {
+    ctx.clearRect(0, 0, W, H);
+
+    // Draw waves
+    waves.forEach(w => {
+      ctx.beginPath();
+      ctx.strokeStyle = w.color;
+      ctx.globalAlpha = w.alpha;
+      ctx.lineWidth = w.thickness;
+      for (let x = 0; x < W; x += 2) {
+        const y = w.y * H + Math.sin(x * w.freq + w.phase + t * w.speed * 1000) * w.amp
+                           + Math.sin(x * w.freq * 2.3 + w.phase * 1.5 + t * w.speed * 700) * (w.amp * 0.4);
+        if (x === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+      }
+      ctx.stroke();
+      w.phase += w.speed * 0.3;
+    });
+
+    // Draw particles
+    ctx.globalAlpha = 1;
+    parts.forEach(p => {
+      ctx.beginPath();
+      ctx.arc(p.x * W, p.y * H, p.r, 0, Math.PI * 2);
+      ctx.fillStyle = p.color;
+      ctx.globalAlpha = p.alpha;
+      ctx.fill();
+      p.x += p.vx;
+      p.y += p.vy;
+      if (p.y < -0.05) { p.y = 1.05; p.x = Math.random(); }
+      if (p.x < 0 || p.x > 1) p.vx *= -1;
+    });
+
+    ctx.globalAlpha = 1;
+    requestAnimationFrame(draw);
+  }
+
+  window.addEventListener('resize', resize);
+  resize();
+  requestAnimationFrame(draw);
+})();
+
+// ═══════════════════════════════════════════════
+// COMMISSION BOARD
+// ═══════════════════════════════════════════════
+const STAGE_LABELS = { received: 'Received', 'in-progress': 'In Progress', revision: 'Revision', delivered: 'Delivered' };
+const STAGE_CLASSES = { received: 'stage-received', 'in-progress': 'stage-in-progress', revision: 'stage-revision', delivered: 'stage-delivered' };
+const PAY_LABELS = { partial: 'Partial', full: 'Paid in Full', tip: 'Tip Added ⭐' };
+const PAY_CLASSES = { partial: 'pay-partial', full: 'pay-full', tip: 'pay-tip' };
+const TAG_COLORS = {
+  ambient: '#60c8e8', combat: '#e05555', jingle: '#f0c040', sting: '#c080e8',
+  map: '#55cc88', coaching: '#f0c040', bundle: '#e08040', other: '#8888aa'
+};
+
+function renderBoard() {
+  // Auto-archive delivered commissions after 2 weeks
+  const now = Date.now();
+  commissions.forEach(c => {
+    if (c.slot === 'active' && c.stage === 'delivered' && c.deliveredAt) {
+      if (now - c.deliveredAt > 14 * 24 * 60 * 60 * 1000) {
+        c.slot = 'archive';
+      }
+    }
+  });
+  save('vf_commissions', commissions);
+
+  const waitlist  = commissions.filter(c => c.slot === 'waitlist');
+  const active    = commissions.filter(c => c.slot === 'active' && c.stage !== 'delivered');
+  const delivered = commissions.filter(c => c.slot === 'active' && c.stage === 'delivered');
+
+  // --- WAITLIST COLUMN ---
+  const colWait = document.getElementById('col-waitlist');
+  document.getElementById('col-wait-count').textContent = waitlist.length;
+  if (waitlist.length === 0) {
+    colWait.innerHTML = '<div class="empty-state">Queue is clear.</div>';
+  } else {
+    colWait.innerHTML = waitlist.map((c, i) => renderWaitlistCard(c, i + 1)).join('');
+  }
+
+  // --- ACTIVE COLUMN ---
+  const colActive = document.getElementById('col-active');
+  document.getElementById('col-active-count').textContent = active.length + '/3';
+  let activeHtml = active.map(c => renderActiveCard(c)).join('');
+  // Empty slots
+  for (let i = active.length; i < 3; i++) {
+    activeHtml += `<div class="empty-slot" onclick="openNewCommission()">
+      <div class="empty-slot-icon">＋</div>
+      <div>Empty Slot</div>
+    </div>`;
+  }
+  colActive.innerHTML = activeHtml;
+
+  // --- DELIVERED COLUMN ---
+  const colDelivered = document.getElementById('col-delivered');
+  document.getElementById('col-delivered-count').textContent = delivered.length;
+  if (delivered.length === 0) {
+    colDelivered.innerHTML = '<div class="empty-state">Nothing delivered yet.</div>';
+  } else {
+    colDelivered.innerHTML = delivered.map(c => renderDeliveredCard(c)).join('');
+  }
+
+  updateStats();
+}
+
+function renderActiveCard(c) {
+  const stages = ['received', 'in-progress', 'revision', 'delivered'];
+  const stageClass = STAGE_CLASSES[c.stage] || 'stage-received';
+  const stageLabel = STAGE_LABELS[c.stage] || c.stage;
+  const payClass = c.paymentStatus ? (PAY_CLASSES[c.paymentStatus] || '') : '';
+  const payLabel = c.paymentStatus ? (PAY_LABELS[c.paymentStatus] || c.paymentStatus) : '';
+  const idx = stages.indexOf(c.stage);
+  const prevStage = idx > 0 ? stages[idx - 1] : null;
+  const nextStage = idx < stages.length - 1 ? stages[idx + 1] : null;
+  const prevLabel = prevStage ? STAGE_LABELS[prevStage] : null;
+  const nextLabel = nextStage ? STAGE_LABELS[nextStage] : null;
+
+  return `<div class="comm-card active-card" onclick="openCommissionDetail('${c.id}')">
+    <div class="card-top">
+      <div>
+        <div class="card-client">${esc(c.clientName)} <span class="card-contact">(${esc(c.contactMethod)})</span></div>
+      </div>
+      <span class="card-stage ${stageClass}">${stageLabel}</span>
+    </div>
+    <div class="card-row">
+      <span class="card-tag">${esc(c.type)}</span>
+      <span class="card-price">${formatMoney(c.price)}${c.tipAmount ? ` <span style="font-size:0.6rem;color:var(--gold-dim);">(+$${c.tipAmount} tip)</span>` : ''}</span>
+      ${payLabel ? `<span class="payment-badge ${payClass}">${payLabel}</span>` : ''}
+    </div>
+    <div class="card-dates">
+      <div class="card-date">Received: <span>${c.dateReceived || '—'}</span></div>
+      ${c.dateDue ? `<div class="card-date">Due: <span style="color:${isDueSoon(c.dateDue)?'#e05555':'inherit'}">${c.dateDue}</span></div>` : ''}
+    </div>
+    ${c.preTasks ? `<div class="card-tasks"><div class="card-tasks-label">Pre-Start Tasks</div><div class="card-tasks-text">${esc(c.preTasks)}</div></div>` : ''}
+    <div style="display:flex;gap:5px;margin-top:8px;flex-wrap:wrap;">
+      ${prevLabel ? `<button class="btn btn-sm" style="flex:1;" onclick="event.stopPropagation();setStage('${c.id}','${prevStage}')">← ${prevLabel}</button>` : '<div style="flex:1;"></div>'}
+      ${nextLabel ? `<button class="btn btn-teal btn-sm" style="flex:1;" onclick="event.stopPropagation();setStage('${c.id}','${nextStage}')">${nextLabel} →</button>` : ''}
+      <button class="btn btn-sm" onclick="event.stopPropagation();openCommissionDetail('${c.id}')" title="Edit">✎</button>
+      <button class="btn btn-sm" style="color:var(--danger);" onclick="event.stopPropagation();deleteCommission('${c.id}')">✕</button>
+    </div>
+  </div>`;
+}
+
+function renderDeliveredCard(c) {
+  const payClass = c.paymentStatus ? (PAY_CLASSES[c.paymentStatus] || '') : '';
+  const payLabel = c.paymentStatus ? (PAY_LABELS[c.paymentStatus] || c.paymentStatus) : '';
+  return `<div class="comm-card" style="border-left:3px solid var(--success);">
+    <div class="card-top">
+      <div class="card-client">${esc(c.clientName)} <span class="card-contact">(${esc(c.contactMethod)})</span></div>
+      <span class="card-stage stage-delivered">Delivered</span>
+    </div>
+    <div class="card-row">
+      <span class="card-tag">${esc(c.type)}</span>
+      <span class="card-price">${formatMoney(c.price)}${c.tipAmount ? ` <span style="font-size:0.6rem;color:var(--gold-dim);">(+$${c.tipAmount} tip)</span>` : ''}</span>
+      ${payLabel ? `<span class="payment-badge ${payClass}">${payLabel}</span>` : ''}
+    </div>
+    ${c.deliveredAt ? `<div class="card-date" style="margin-top:4px;">Delivered: <span>${new Date(c.deliveredAt).toLocaleDateString()}</span></div>` : ''}
+    <div style="display:flex;gap:5px;margin-top:8px;">
+      <button class="btn btn-sm" style="flex:1;" onclick="setStage('${c.id}','revision')">← Back to Revision</button>
+      <button class="btn btn-sm" style="color:var(--danger);" onclick="deleteCommission('${c.id}')">✕</button>
+    </div>
+  </div>`;
+}
+
+function renderWaitlistCard(c, position) {
+  const payClass = c.paymentStatus ? (PAY_CLASSES[c.paymentStatus] || '') : '';
+  const payLabel = c.paymentStatus ? (PAY_LABELS[c.paymentStatus] || '') : '';
+  return `<div class="waitlist-card-collapsed" onclick="toggleWaitlistExpand('${c.id}', this)">
+    <div class="wc-left" style="gap:8px;">
+      <span style="font-family:'JetBrains Mono',monospace;font-size:0.7rem;color:var(--gold);opacity:0.7;flex-shrink:0;">#${position}</span>
+      <div style="display:flex;flex-direction:column;gap:2px;flex:1;min-width:0;">
+        <div style="display:flex;align-items:center;gap:7px;flex-wrap:wrap;">
+          <span class="wc-name">${esc(c.clientName)}</span>
+          <span class="wc-tag" style="font-size:0.6rem;color:var(--text-ghost);">(${esc(c.contactMethod)})</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+          <span class="card-tag" style="font-size:0.6rem;">${esc(c.type)}</span>
+          <span class="card-price" style="font-size:0.75rem;">${formatMoney(c.price)}${c.tipAmount ? ` <span style="font-size:0.58rem;color:var(--gold-dim);">(+$${c.tipAmount})</span>` : ''}</span>
+          ${payLabel ? `<span class="payment-badge ${payClass}" style="font-size:0.58rem;">${payLabel}</span>` : ''}
+        </div>
+      </div>
+    </div>
+    <div style="display:flex;gap:5px;align-items:center;flex-shrink:0;">
+      <button class="btn btn-sm" onclick="event.stopPropagation();openCommissionDetail('${c.id}')">✎</button>
+      <button class="btn btn-teal btn-sm" onclick="event.stopPropagation();moveToActive('${c.id}')">→ Active</button>
+      <button class="btn btn-sm" style="color:var(--danger);" onclick="event.stopPropagation();deleteCommission('${c.id}')">✕</button>
+      <span class="wc-expand" id="wl-chevron-${c.id}">▼</span>
+    </div>
+  </div>
+  <div id="wl-expand-${c.id}" style="display:none;">
+    <div class="comm-card waitlist-card" style="border-radius:0 0 6px 6px;border-top:none;margin-top:-2px;">
+      <div class="card-dates" style="margin-bottom:5px;">
+        <div class="card-date">Received: <span>${c.dateReceived||'—'}</span></div>
+        ${c.dateDue ? `<div class="card-date">Due: <span>${c.dateDue}</span></div>` : ''}
+      </div>
+      ${c.preTasks ? `<div class="card-tasks"><div class="card-tasks-label">Pre-Start Tasks</div><div class="card-tasks-text">${esc(c.preTasks)}</div></div>` : ''}
+      ${c.notes ? `<div class="card-tasks" style="margin-top:5px;"><div class="card-tasks-label" style="color:var(--text-dim);">Notes</div><div style="font-size:0.72rem;color:var(--text);">${esc(c.notes)}</div></div>` : ''}
+    </div>
+  </div>`;
+}
+
+function toggleWaitlistExpand(id, el) {
+  const expandEl = document.getElementById('wl-expand-' + id);
+  const chevron  = document.getElementById('wl-chevron-' + id);
+  if (!expandEl) return;
+  const open = expandEl.style.display === 'block';
+  expandEl.style.display = open ? 'none' : 'block';
+  if (chevron) chevron.textContent = open ? '▼' : '▲';
+}
+
+function setStage(id, newStage) {
+  const c = commissions.find(x => x.id === id);
+  if (!c) return;
+  const prevStage = c.stage;
+  c.stage = newStage;
+  if (newStage === 'delivered' && prevStage !== 'delivered') {
+    c.deliveredAt = Date.now();
+    showPraise('complete');
+  }
+  if (newStage !== 'delivered') {
+    c.deliveredAt = null;
+  }
+  save('vf_commissions', commissions);
+  renderBoard();
+}
+
+function moveToActive(id) {
+  const active = commissions.filter(c => c.slot === 'active' && c.stage !== 'delivered');
+  if (active.length >= 3) {
+    alert("All 3 active slots are full. Complete one first!");
+    return;
+  }
+  const c = commissions.find(x => x.id === id);
+  if (!c) return;
+  c.slot = 'active';
+  c.stage = 'received';
+  save('vf_commissions', commissions);
+  showPraise('waitlistMove');
+  renderBoard();
+}
+
+function deleteCommission(id) {
+  commissions = commissions.filter(c => c.id !== id);
+  save('vf_commissions', commissions);
+  renderBoard();
+}
+
+function toggleTipField(rowId, value) {
+  const row = document.getElementById(rowId);
+  if (row) row.style.display = value === 'tip' ? 'block' : 'none';
+}
+
+function openNewCommission() {
+  const active = commissions.filter(c => c.slot === 'active').length;
+  const slot = active < 3 ? 'active' : 'waitlist';
+  showModal(`
+    <div class="modal">
+      <div class="modal-title">New Commission ${slot === 'waitlist' ? '(→ Waitlist)' : ''}</div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Client Name</label>
+          <input class="form-input" id="nc-name" placeholder="e.g. AliMyGuy">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Contact Method</label>
+          <input class="form-input" id="nc-contact" placeholder="Discord / Email / Instagram">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Commission Type</label>
+          <select class="form-select" id="nc-type">
+            <option value="Stinger SFX (10sec)">Stinger SFX (10sec)</option>
+            <option value="Jingle (1min)">Jingle (1min)</option>
+            <option value="Short Music (2min)">Short Music (2min)</option>
+            <option value="Standard Music (3-4min)">Standard Music (3-4min)</option>
+            <option value="Extended Music (5min+)">Extended Music (5min+)</option>
+            <option value="Campaign Score">Campaign Score</option>
+            <option value="Map">Map</option>
+            <option value="Coaching">Coaching</option>
+            <option value="Bundle">Bundle</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Price Agreed ($)</label>
+          <input class="form-input" id="nc-price" type="number" placeholder="0.00">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Payment Status</label>
+          <select class="form-select" id="nc-pay" onchange="toggleTipField('nc-tip-row', this.value)">
+            <option value="">— Not Yet —</option>
+            <option value="partial">Partial</option>
+            <option value="full">Paid in Full</option>
+            <option value="tip">Tip Added ⭐</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Date Due (optional)</label>
+          <input class="form-input" id="nc-due" type="date">
+        </div>
+      </div>
+      <div class="form-group" id="nc-tip-row" style="display:none;">
+        <label class="form-label">Tip Amount ($)</label>
+        <input class="form-input" id="nc-tip" type="number" placeholder="0.00" style="max-width:160px;">
+        <div style="font-size:0.65rem;color:var(--text-ghost);margin-top:3px;">Added to total price automatically.</div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Pre-Start Tasks (optional)</label>
+        <input class="form-input" id="nc-tasks" placeholder="e.g. Buy jazz fusion pack, research belching SFX...">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Notes</label>
+        <textarea class="form-textarea" id="nc-notes" placeholder="Client details, references, links..."></textarea>
+      </div>
+      <div class="modal-actions">
+        <button class="btn" onclick="closeModal()">Cancel</button>
+        <button class="btn btn-teal" onclick="saveNewCommission('${slot}')">Add Commission</button>
+      </div>
+    </div>`);
+}
+
+function autoLogIncome(c, prevPayStatus) {
+  // Remove any existing auto-entry for this commission
+  expenses = expenses.filter(e => e.autoId !== c.id);
+
+  const paid = c.paymentStatus === 'full' || c.paymentStatus === 'tip';
+  if (!paid) {
+    save('vf_expenses', expenses);
+    renderExpenses();
+    updateStats();
+    return;
+  }
+
+  const desc = c.tipAmount
+    ? `${c.clientName} — ${c.type} (incl. $${c.tipAmount} tip)`
+    : `${c.clientName} — ${c.type}`;
+
+  expenses.push({
+    id: 'e_' + Date.now(),
+    autoId: c.id,
+    desc,
+    amount: c.price,
+    type: 'income',
+    date: new Date().toISOString().split('T')[0],
+    auto: true,
+  });
+
+  save('vf_expenses', expenses);
+  renderExpenses();
+  updateStats();
+}
+
+function saveNewCommission(slot) {
+  const name = document.getElementById('nc-name').value.trim();
+  if (!name) return alert('Client name required.');
+  const basePrice = parseFloat(document.getElementById('nc-price').value) || 0;
+  const tipAmount = parseFloat(document.getElementById('nc-tip')?.value) || 0;
+  const payStatus = document.getElementById('nc-pay').value;
+  const c = {
+    id: 'c_' + Date.now(),
+    slot,
+    clientName: name,
+    contactMethod: document.getElementById('nc-contact').value.trim() || 'Discord',
+    type: document.getElementById('nc-type').value,
+    basePrice: basePrice,
+    tipAmount: payStatus === 'tip' ? tipAmount : 0,
+    price: payStatus === 'tip' ? basePrice + tipAmount : basePrice,
+    paymentStatus: payStatus,
+    dateReceived: new Date().toLocaleDateString(),
+    dateDue: document.getElementById('nc-due').value || '',
+    preTasks: document.getElementById('nc-tasks').value.trim(),
+    notes: document.getElementById('nc-notes').value.trim(),
+    stage: 'received',
+    deliveredAt: null,
+  };
+  commissions.push(c);
+  save('vf_commissions', commissions);
+  autoLogIncome(c, '');
+  closeModal();
+  renderBoard();
+}
+
+function openCommissionDetail(id) {
+  const c = commissions.find(x => x.id === id);
+  if (!c) return;
+  showModal(`
+    <div class="modal">
+      <div class="modal-title">Edit Commission — ${esc(c.clientName)}</div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Client Name</label>
+          <input class="form-input" id="ed-name" value="${esc(c.clientName)}">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Contact Method</label>
+          <input class="form-input" id="ed-contact" value="${esc(c.contactMethod)}">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Type</label>
+          <select class="form-select" id="ed-type">
+            ${['Stinger SFX (10sec)','Jingle (1min)','Short Music (2min)','Standard Music (3-4min)','Extended Music (5min+)','Campaign Score','Map','Coaching','Bundle','Other'].map(t=>
+              `<option value="${t}" ${c.type===t?'selected':''}>${t}</option>`
+            ).join('')}
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Price ($)</label>
+          <input class="form-input" id="ed-price" type="number" value="${c.basePrice ?? c.price ?? 0}">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Stage</label>
+          <select class="form-select" id="ed-stage">
+            ${Object.entries(STAGE_LABELS).map(([v,l])=>
+              `<option value="${v}" ${c.stage===v?'selected':''}>${l}</option>`
+            ).join('')}
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Payment Status</label>
+          <select class="form-select" id="ed-pay" onchange="toggleTipField('ed-tip-row', this.value)">
+            <option value="" ${!c.paymentStatus?'selected':''}>— Not Yet —</option>
+            ${Object.entries(PAY_LABELS).map(([v,l])=>
+              `<option value="${v}" ${c.paymentStatus===v?'selected':''}>${l}</option>`
+            ).join('')}
+          </select>
+        </div>
+      </div>
+      <div class="form-group" id="ed-tip-row" style="display:${c.paymentStatus==='tip'?'block':'none'};">
+        <label class="form-label">Tip Amount ($)</label>
+        <input class="form-input" id="ed-tip" type="number" placeholder="0.00" value="${c.tipAmount||''}" style="max-width:160px;">
+        <div style="font-size:0.65rem;color:var(--text-ghost);margin-top:3px;">Added to total price automatically.</div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Date Due</label>
+        <input class="form-input" id="ed-due" type="date" value="${c.dateDue||''}">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Pre-Start Tasks</label>
+        <input class="form-input" id="ed-tasks" value="${esc(c.preTasks||'')}">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Notes</label>
+        <textarea class="form-textarea" id="ed-notes">${esc(c.notes||'')}</textarea>
+      </div>
+      <div class="modal-actions">
+        <button class="btn" style="color:var(--danger);border-color:var(--danger);" onclick="deleteCommission('${c.id}');closeModal()">Delete</button>
+        <button class="btn" onclick="closeModal()">Cancel</button>
+        <button class="btn btn-teal" onclick="saveCommissionEdit('${c.id}')">Save</button>
+      </div>
+    </div>`);
+}
+
+function saveCommissionEdit(id) {
+  const c = commissions.find(x => x.id === id);
+  if (!c) return;
+  const prevStage = c.stage;
+  const prevPayStatus = c.paymentStatus;
+  c.clientName = document.getElementById('ed-name').value.trim() || c.clientName;
+  c.contactMethod = document.getElementById('ed-contact').value.trim() || c.contactMethod;
+  c.type = document.getElementById('ed-type').value;
+  const basePrice = parseFloat(document.getElementById('ed-price').value) || 0;
+  const newPayStatus = document.getElementById('ed-pay').value;
+  const tipAmount = parseFloat(document.getElementById('ed-tip')?.value) || 0;
+  c.basePrice = basePrice;
+  c.tipAmount = newPayStatus === 'tip' ? tipAmount : 0;
+  c.price = newPayStatus === 'tip' ? basePrice + tipAmount : basePrice;
+  c.stage = document.getElementById('ed-stage').value;
+  c.paymentStatus = newPayStatus;
+  c.dateDue = document.getElementById('ed-due').value;
+  c.preTasks = document.getElementById('ed-tasks').value.trim();
+  c.notes = document.getElementById('ed-notes').value.trim();
+  if (c.stage === 'delivered' && prevStage !== 'delivered') {
+    c.deliveredAt = Date.now();
+    showPraise('complete');
+  }
+  save('vf_commissions', commissions);
+  autoLogIncome(c, prevPayStatus);
+  closeModal();
+  renderBoard();
+}
+
+// ═══════════════════════════════════════════════
+// STATS
+// ═══════════════════════════════════════════════
+function updateStats() {
+  const active = commissions.filter(c => c.slot === 'active' && c.stage !== 'delivered');
+  const wait = commissions.filter(c => c.slot === 'waitlist');
+  const unpaid = commissions.filter(c => c.slot === 'active' && c.paymentStatus !== 'full').reduce((s,c) => s + (c.price||0), 0);
+  const now = new Date();
+  const thisMonthIncome = expenses.filter(e => {
+    const d = new Date(e.date);
+    return e.type === 'income' && d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+  }).reduce((s,e) => s + (e.amount||0), 0);
+
+  // Next due
+  let nextDue = null, nextDueName = '';
+  active.forEach(c => {
+    if (c.dateDue) {
+      const d = new Date(c.dateDue);
+      if (!nextDue || d < nextDue) { nextDue = d; nextDueName = c.clientName; }
+    }
+  });
+
+  // Completed this month / last month
+  const allDelivered = commissions.filter(c => c.deliveredAt);
+  const thisMonthNum = now.getMonth();
+  const thisYearNum = now.getFullYear();
+  const lastMonthNum = thisMonthNum === 0 ? 11 : thisMonthNum - 1;
+  const lastMonthYear = thisMonthNum === 0 ? thisYearNum - 1 : thisYearNum;
+  const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+  const completedThis = allDelivered.filter(c => {
+    const d = new Date(c.deliveredAt);
+    return d.getMonth() === thisMonthNum && d.getFullYear() === thisYearNum;
+  }).length;
+
+  const completedLast = allDelivered.filter(c => {
+    const d = new Date(c.deliveredAt);
+    return d.getMonth() === lastMonthNum && d.getFullYear() === lastMonthYear;
+  }).length;
+
+  // Last month income
+  const lastMonthIncome = expenses.filter(e => {
+    const d = new Date(e.date);
+    return e.type === 'income' && d.getMonth() === lastMonthNum && d.getFullYear() === lastMonthYear;
+  }).reduce((s,e) => s + (e.amount||0), 0);
+
+  document.getElementById('stat-active').textContent = active.length;
+  document.getElementById('stat-wait').textContent = wait.length;
+  document.getElementById('stat-unpaid').textContent = '$' + unpaid.toFixed(0);
+  document.getElementById('stat-due').textContent = nextDue ? nextDue.toLocaleDateString('en-US',{month:'short',day:'numeric'}) : '—';
+  document.getElementById('stat-due-name').textContent = nextDueName || 'no deadlines set';
+  document.getElementById('stat-completed').textContent = completedThis;
+  document.getElementById('stat-completed-last').textContent = completedLast > 0 ? MONTHS[lastMonthNum] + ': ' + completedLast : 'first month on record';
+  document.getElementById('stat-month').textContent = '$' + thisMonthIncome.toFixed(2);
+  document.getElementById('stat-month-last').textContent = lastMonthIncome > 0 ? MONTHS[lastMonthNum] + ': $' + lastMonthIncome.toFixed(2) : 'first month on record';
+  document.getElementById('hdr-active').textContent = active.length;
+  document.getElementById('hdr-wait').textContent = wait.length;
+  document.getElementById('hdr-outstanding').textContent = '$' + unpaid.toFixed(0);
+}
+
+// ═══════════════════════════════════════════════
+// REMINDERS
+// ═══════════════════════════════════════════════
+function renderReminders() {
+  const list = document.getElementById('reminder-list');
+  if (reminders.length === 0) {
+    list.innerHTML = '<div class="empty-state" style="padding:10px 0;">All clear, Maestro.</div>';
+    return;
+  }
+  list.innerHTML = reminders.map(r => `
+    <div class="reminder-item">
+      <div class="reminder-text">${esc(r.text)}</div>
+      <button class="reminder-del" onclick="deleteReminder('${r.id}')">✕</button>
+    </div>`).join('');
+}
+
+function addReminder() {
+  const input = document.getElementById('reminder-input');
+  const text = input.value.trim();
+  if (!text) return;
+  reminders.push({ id: 'r_' + Date.now(), text });
+  save('vf_reminders', reminders);
+  input.value = '';
+  renderReminders();
+  showPraise('reminder');
+}
+
+function deleteReminder(id) {
+  reminders = reminders.filter(r => r.id !== id);
+  save('vf_reminders', reminders);
+  renderReminders();
+}
+
+// ═══════════════════════════════════════════════
+// TO-DO
+// ═══════════════════════════════════════════════
+const TODO_CATS = ['all', 'Forge Business', 'Livestream', 'Music Production', 'Personal Errands'];
+const TODO_CAT_COLORS = {
+  'Forge Business': '#00d4c8',
+  'Livestream': '#60c8e8',
+  'Music Production': '#c080e8',
+  'Personal Errands': '#55cc88',
+};
+
+function renderTodoCats() {
+  const el = document.getElementById('todo-cats');
+  el.innerHTML = TODO_CATS.map(cat => `
+    <button class="todo-cat-tab ${activeTodoCat===cat?'active':''}" onclick="setTodoCat('${cat}')">${cat === 'all' ? 'All' : cat}</button>
+  `).join('');
+}
+
+function setTodoCat(cat) {
+  activeTodoCat = cat;
+  renderTodoCats();
+  renderTodos();
+}
+
+function renderTodos() {
+  const list = document.getElementById('todo-list');
+  let filtered = activeTodoCat === 'all' ? todos : todos.filter(t => t.cat === activeTodoCat);
+  filtered = filtered.filter(t => !t.archived);
+
+  if (filtered.length === 0) {
+    list.innerHTML = '<div class="empty-state">Nothing here. Either you\'re done or you\'re avoiding something.</div>';
+    return;
+  }
+
+  const priorityOrder = { high: 0, med: 1, low: 2, '': 3 };
+  filtered.sort((a, b) => (priorityOrder[a.priority] || 3) - (priorityOrder[b.priority] || 3));
+
+  list.innerHTML = filtered.map(t => `
+    <div class="todo-item">
+      <input type="checkbox" class="todo-check" ${t.done?'checked':''} onchange="toggleTodo('${t.id}', this.checked)">
+      <div class="todo-text ${t.done?'done':''}">${esc(t.text)}</div>
+      <div class="todo-meta">
+        ${t.cat !== 'all' ? `<span style="font-size:0.6rem;color:${TODO_CAT_COLORS[t.cat]||'var(--text-ghost)'};">●</span>` : ''}
+        <div class="priority-dot priority-${t.priority||'low'}"></div>
+        <button class="btn-icon" onclick="deleteTodo('${t.id}')">✕</button>
+      </div>
+    </div>`).join('');
+}
+
+function toggleTodo(id, done) {
+  const t = todos.find(x => x.id === id);
+  if (!t) return;
+  t.done = done;
+  if (done) {
+    showPraise('todo');
+    // Archive option after 3 seconds
+    setTimeout(() => {
+      if (confirm(`"${t.text}" — archive it for the record?`)) {
+        t.archived = true;
+        save('vf_todos', todos);
+        renderTodos();
+      }
+    }, 2300);
+  }
+  save('vf_todos', todos);
+  renderTodos();
+}
+
+function deleteTodo(id) {
+  todos = todos.filter(t => t.id !== id);
+  save('vf_todos', todos);
+  renderTodos();
+}
+
+function openAddTodo() {
+  showModal(`
+    <div class="modal">
+      <div class="modal-title">Add To-Do</div>
+      <div class="form-group">
+        <label class="form-label">Task</label>
+        <input class="form-input" id="td-text" placeholder="What needs doing?">
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Category</label>
+          <select class="form-select" id="td-cat">
+            ${TODO_CATS.filter(c=>c!=='all').map(c=>`<option value="${c}">${c}</option>`).join('')}
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Priority</label>
+          <select class="form-select" id="td-priority">
+            <option value="high">🔴 High</option>
+            <option value="med" selected>🟡 Medium</option>
+            <option value="low">⚫ Low</option>
+          </select>
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn" onclick="closeModal()">Cancel</button>
+        <button class="btn btn-teal" onclick="saveNewTodo()">Add Task</button>
+      </div>
+    </div>`);
+}
+
+function saveNewTodo() {
+  const text = document.getElementById('td-text').value.trim();
+  if (!text) return;
+  todos.push({
+    id: 't_' + Date.now(),
+    text,
+    cat: document.getElementById('td-cat').value,
+    priority: document.getElementById('td-priority').value,
+    done: false,
+    archived: false,
+  });
+  save('vf_todos', todos);
+  closeModal();
+  renderTodoCats();
+  renderTodos();
+}
+
+// ═══════════════════════════════════════════════
+// CALENDAR
+// ═══════════════════════════════════════════════
+const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const BLOCK_TYPES = ['stream', 'music', 'coaching', 'admin', 'family'];
+
+function getWeekDates() {
+  const today = new Date();
+  const sunday = new Date(today);
+  sunday.setDate(today.getDate() - today.getDay());
+  return Array.from({length:7}, (_,i) => {
+    const d = new Date(sunday);
+    d.setDate(sunday.getDate() + i);
+    return d;
+  });
+}
+
+function renderCalendar() {
+  const grid = document.getElementById('calendar-grid');
+  const today = new Date();
+  const weekDates = getWeekDates();
+
+  grid.innerHTML = weekDates.map((date, i) => {
+    const key = DAYS[i];
+    const isToday = date.toDateString() === today.toDateString();
+    const blocks = (calCurrent[key] || []);
+    return `<div class="cal-day"
+      ondragover="calDragOver(event)"
+      ondrop="calDrop(event,'${key}')"
+      ondragleave="calDragLeave(event)">
+      <div class="cal-day-header ${isToday?'today':''}">${DAYS[i]}<br><span style="font-size:0.58rem;">${date.getMonth()+1}/${date.getDate()}</span></div>
+      <div class="cal-blocks" id="cal-${key}">
+        ${blocks.map(b => `
+          <div class="cal-block ${b.type}" draggable="true"
+            ondragstart="calDragStart(event,'${key}','${b.id}')"
+            ondragover="event.stopPropagation();event.preventDefault()"
+            ondrop="event.stopPropagation();calDrop(event,'${key}')"
+            ondblclick="event.stopPropagation();editCalBlock('${key}','${b.id}')">
+            ${(b.startTime||b.endTime) ? `<div class="cal-block-time">${b.startTime||''}${b.startTime&&b.endTime?' — ':''}${b.endTime||''}</div>` : ''}
+            <div class="cal-block-label">
+              <span style="flex:1;">${esc(b.text)}</span>
+              <span style="cursor:pointer;opacity:0.4;flex-shrink:0;" onclick="event.stopPropagation();removeCalBlock('${key}','${b.id}')">✕</span>
+            </div>
+          </div>`).join('')}
+      </div>
+      <div class="cal-add" onclick="addCalBlock('${key}')">+ add</div>
+    </div>`;
+  }).join('');
+}
+
+let calDragInfo = null;
+
+function calDragStart(e, day, blockId) {
+  calDragInfo = { day, blockId };
+  e.dataTransfer.effectAllowed = 'move';
+}
+
+function calDragOver(e) {
+  e.preventDefault();
+  e.dataTransfer.dropEffect = 'move';
+  const day = e.currentTarget;
+  day.style.background = 'rgba(0,212,200,0.06)';
+}
+
+function calDragLeave(e) {
+  e.currentTarget.style.background = '';
+}
+
+function calDrop(e, targetDay) {
+  e.preventDefault();
+  e.currentTarget.style.background = '';
+  if (!calDragInfo || calDragInfo.day === targetDay) {
+    calDragInfo = null;
+    return;
+  }
+  const blocks = calCurrent[calDragInfo.day] || [];
+  const idx = blocks.findIndex(b => b.id === calDragInfo.blockId);
+  if (idx === -1) { calDragInfo = null; return; }
+  const [block] = blocks.splice(idx, 1);
+  calCurrent[calDragInfo.day] = blocks;
+  if (!calCurrent[targetDay]) calCurrent[targetDay] = [];
+  calCurrent[targetDay].push(block);
+  save('vf_cal_current', calCurrent);
+  calDragInfo = null;
+  renderCalendar();
+}
+
+function calBlockModal(day, existing) {
+  const isEdit = !!existing;
+  showModal(`
+    <div class="modal">
+      <div class="modal-title">${isEdit ? 'Edit Block — '+day : 'Add to '+day}</div>
+      <div class="form-group">
+        <label class="form-label">Label</label>
+        <input class="form-input" id="cb-text" placeholder="e.g. Stream night, Commission work..." value="${existing ? esc(existing.text) : ''}">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Type</label>
+        <select class="form-select" id="cb-type">
+          ${BLOCK_TYPES.map(t=>`<option value="${t}" ${existing&&existing.type===t?'selected':''}>${t.charAt(0).toUpperCase()+t.slice(1)}</option>`).join('')}
+        </select>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Start Time <span style="color:var(--text-ghost);font-size:0.62rem;">(optional)</span></label>
+          <input class="form-input" id="cb-start" type="time" value="${existing&&existing.startTime ? existing.startTime : ''}">
+        </div>
+        <div class="form-group">
+          <label class="form-label">End Time <span style="color:var(--text-ghost);font-size:0.62rem;">(optional)</span></label>
+          <input class="form-input" id="cb-end" type="time" value="${existing&&existing.endTime ? existing.endTime : ''}">
+        </div>
+      </div>
+      <div class="modal-actions">
+        ${isEdit ? `<button class="btn" style="color:var(--danger);border-color:var(--danger);" onclick="removeCalBlock('${day}','${existing.id}');closeModal()">Delete</button>` : ''}
+        <button class="btn" onclick="closeModal()">Cancel</button>
+        <button class="btn btn-teal" onclick="saveCalBlock('${day}','${existing ? existing.id : ''}')">
+          ${isEdit ? 'Save' : 'Add'}
+        </button>
+      </div>
+    </div>`);
+}
+
+function addCalBlock(day) { calBlockModal(day, null); }
+
+function editCalBlock(day, id) {
+  const blocks = calCurrent[day] || [];
+  const b = blocks.find(x => x.id === id);
+  if (b) calBlockModal(day, b);
+}
+
+function saveCalBlock(day, existingId) {
+  const text = document.getElementById('cb-text').value.trim();
+  if (!text) return;
+  const startRaw = document.getElementById('cb-start').value;
+  const endRaw   = document.getElementById('cb-end').value;
+
+  function fmt12(t) {
+    if (!t) return '';
+    const [h, m] = t.split(':').map(Number);
+    const ampm = h >= 12 ? 'PM' : 'AM';
+    const h12 = h % 12 || 12;
+    return h12 + ':' + String(m).padStart(2,'0') + ' ' + ampm;
+  }
+
+  if (!calCurrent[day]) calCurrent[day] = [];
+
+  if (existingId) {
+    const b = calCurrent[day].find(x => x.id === existingId);
+    if (b) {
+      b.text = text;
+      b.type = document.getElementById('cb-type').value;
+      b.startTime = fmt12(startRaw);
+      b.endTime   = fmt12(endRaw);
+    }
+  } else {
+    calCurrent[day].push({
+      id: 'b_'+Date.now(),
+      text,
+      type: document.getElementById('cb-type').value,
+      startTime: fmt12(startRaw),
+      endTime:   fmt12(endRaw),
+    });
+  }
+
+  save('vf_cal_current', calCurrent);
+  closeModal();
+  renderCalendar();
+}
+
+function removeCalBlock(day, id) {
+  calCurrent[day] = (calCurrent[day]||[]).filter(b=>b.id!==id);
+  save('vf_cal_current', calCurrent);
+  renderCalendar();
+}
+
+function openArchiveModal() {
+  const archive = commissions.filter(c => c.slot === 'archive');
+  const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+  const rows = archive.length === 0
+    ? '<div class="empty-state" style="padding:20px;">Nothing archived yet. Keep shipping.</div>'
+    : [...archive].sort((a,b) => (b.deliveredAt||0) - (a.deliveredAt||0)).map(c => {
+        const d = c.deliveredAt ? new Date(c.deliveredAt) : null;
+        const dateStr = d ? MONTHS[d.getMonth()] + ' ' + d.getDate() + ', ' + d.getFullYear() : '—';
+        const payClass = c.paymentStatus ? (PAY_CLASSES[c.paymentStatus]||'') : '';
+        const payLabel = c.paymentStatus ? (PAY_LABELS[c.paymentStatus]||'') : '';
+        return `<div class="archive-item" style="opacity:1;padding:10px 12px;flex-wrap:wrap;gap:6px;">
+          <div style="flex:1;min-width:140px;">
+            <div style="font-weight:600;font-size:0.8rem;">${esc(c.clientName)} <span style="color:var(--text-ghost);font-weight:400;font-size:0.7rem;">(${esc(c.contactMethod)})</span></div>
+            <div style="font-size:0.68rem;color:var(--text-dim);margin-top:2px;">${esc(c.type)}</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;">
+            <span class="card-price">${formatMoney(c.price)}${c.tipAmount?` <span style="font-size:0.6rem;color:var(--gold-dim);">(+$${c.tipAmount})</span>`:''}</span>
+            ${payLabel ? `<span class="payment-badge ${payClass}">${payLabel}</span>` : ''}
+            <span style="color:var(--text-ghost);font-size:0.65rem;">${dateStr}</span>
+            <button class="btn-icon" style="color:var(--danger);" onclick="deleteCommission('${c.id}');openArchiveModal()">✕</button>
+          </div>
+        </div>`;
+      }).join('');
+
+  showModal(`
+    <div class="modal" style="width:580px;">
+      <div class="modal-title">📦 Archive — All Delivered Commissions</div>
+      <div style="font-size:0.68rem;color:var(--text-ghost);margin-bottom:12px;">${archive.length} total · auto-archived after 2 weeks in Delivered</div>
+      <div style="display:flex;flex-direction:column;gap:4px;max-height:400px;overflow-y:auto;">
+        ${rows}
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-teal" onclick="closeModal()">Close</button>
+      </div>
+    </div>`);
+}
+
+function resetToDefault() {
+  calCurrent = JSON.parse(JSON.stringify(calDefault));
+  save('vf_cal_current', calCurrent);
+  renderCalendar();
+}
+
+function confirmSaveDefault() {
+  showModal(`
+    <div class="confirm-dialog">
+      <div class="confirm-title">Save as Default Week?</div>
+      <div class="confirm-text">This will overwrite your current default schedule with what's on screen right now. Are you sure?</div>
+      <div class="confirm-actions">
+        <button class="btn" onclick="closeModal()">Nope, cancel</button>
+        <button class="btn btn-gold" onclick="saveAsDefault()">Yeah, do it</button>
+      </div>
+    </div>`);
+}
+
+function saveAsDefault() {
+  calDefault = JSON.parse(JSON.stringify(calCurrent));
+  save('vf_cal_default', calDefault);
+  closeModal();
+  showPraise('todo');
+}
+
+// ═══════════════════════════════════════════════
+// EXPENSES
+// ═══════════════════════════════════════════════
+function renderExpenses() {
+  const list = document.getElementById('expense-list');
+  const sorted = [...expenses].sort((a,b) => new Date(b.date) - new Date(a.date));
+  list.innerHTML = sorted.slice(0,8).map(e => `
+    <div class="expense-item">
+      <span class="exp-desc">${esc(e.desc)}${e.auto ? ' <span style="font-size:0.58rem;color:var(--text-ghost);font-style:italic;">(auto)</span>' : ''}</span>
+      <span class="exp-amount ${e.type}">${e.type==='income'?'+':'-'}$${Math.abs(e.amount).toFixed(2)}</span>
+      <span class="exp-date">${e.date}</span>
+      <button class="btn-icon" onclick="deleteExpense('${e.id}')" ${e.auto ? 'title="Auto-logged from commission"' : ''}>✕</button>
+    </div>`).join('') || '<div class="empty-state">No entries yet.</div>';
+
+  const ytdIncome = expenses.filter(e=>e.type==='income').reduce((s,e)=>s+(e.amount||0),0);
+  const ytdExpense = expenses.filter(e=>e.type==='expense').reduce((s,e)=>s+(e.amount||0),0);
+  document.getElementById('exp-income').textContent = '$'+ytdIncome.toFixed(2);
+  document.getElementById('exp-expenses').textContent = '$'+ytdExpense.toFixed(2);
+
+  // Set default date to today
+  const dateInput = document.getElementById('exp-date');
+  if (!dateInput.value) dateInput.value = new Date().toISOString().split('T')[0];
+}
+
+function addExpense() {
+  const desc = document.getElementById('exp-desc').value.trim();
+  const amount = parseFloat(document.getElementById('exp-amount').value);
+  const type = document.getElementById('exp-type').value;
+  const date = document.getElementById('exp-date').value;
+  if (!desc || isNaN(amount)) return;
+  expenses.push({ id: 'e_'+Date.now(), desc, amount, type, date });
+  save('vf_expenses', expenses);
+  document.getElementById('exp-desc').value = '';
+  document.getElementById('exp-amount').value = '';
+  renderExpenses();
+  updateStats();
+  showPraise('expense');
+}
+
+function deleteExpense(id) {
+  expenses = expenses.filter(e=>e.id!==id);
+  save('vf_expenses', expenses);
+  renderExpenses();
+  updateStats();
+}
+
+function exportTaxData() {
+  const headers = 'Date,Description,Type,Amount';
+  const rows = expenses.map(e => `${e.date},"${e.desc}",${e.type},${e.type==='expense'?'-':''}${e.amount}`);
+  const csv = [headers, ...rows].join('\n');
+  const blob = new Blob([csv], {type:'text/csv'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'vorpal-forge-tax-export.csv';
+  a.click();
+}
+
+// ═══════════════════════════════════════════════
+// PRAISE MANAGER
+// ═══════════════════════════════════════════════
+function openPraiseManager() {
+  const savedBank = load('vf_praise_bank', null);
+  if (savedBank) Object.assign(praiseBank, savedBank);
+
+  const allPhrases = Object.entries(praiseBank).flatMap(([ctx, phrases]) =>
+    phrases.map((p, i) => ({ ctx, idx: i, text: p.text, sub: p.sub || '' }))
+  );
+
+  showModal(`
+    <div class="modal">
+      <div class="modal-title">⚙ Praise Bank Manager</div>
+      <div class="praise-manager-list" id="pm-list">
+        ${allPhrases.map((p,i) => `
+          <div class="praise-manage-item" id="pm-${p.ctx}-${p.idx}">
+            <span class="praise-ctx">${p.ctx}</span>
+            <span style="flex:1;">${esc(p.text)}</span>
+            <button class="btn-icon" onclick="deletePraiseEntry('${p.ctx}',${p.idx})">✕</button>
+          </div>`).join('')}
+      </div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;">
+        <select class="form-select" id="pm-ctx" style="width:140px;">
+          ${Object.keys(praiseBank).map(k=>`<option value="${k}">${k}</option>`).join('')}
+        </select>
+        <input class="form-input" id="pm-text" placeholder="New phrase..." style="flex:1;min-width:140px;">
+        <button class="btn btn-teal btn-sm" onclick="addPraiseEntry()">Add</button>
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-teal" onclick="closeModal()">Done</button>
+      </div>
+    </div>`);
+}
+
+function deletePraiseEntry(ctx, idx) {
+  praiseBank[ctx].splice(idx, 1);
+  save('vf_praise_bank', praiseBank);
+  openPraiseManager();
+}
+
+function addPraiseEntry() {
+  const ctx = document.getElementById('pm-ctx').value;
+  const text = document.getElementById('pm-text').value.trim();
+  if (!text) return;
+  praiseBank[ctx].push({ text, sub: '' });
+  save('vf_praise_bank', praiseBank);
+  openPraiseManager();
+}
+
+// ═══════════════════════════════════════════════
+// MODAL HELPERS
+// ═══════════════════════════════════════════════
+function showModal(html) {
+  const backdrop = document.getElementById('modal-backdrop');
+  document.getElementById('modal-content').innerHTML = html;
+  backdrop.style.display = 'flex';
+  setTimeout(() => {
+    const firstInput = backdrop.querySelector('input, select, textarea');
+    if (firstInput) firstInput.focus();
+  }, 50);
+}
+
+function closeModal(e) {
+  if (e && e.target !== document.getElementById('modal-backdrop')) return;
+  document.getElementById('modal-backdrop').style.display = 'none';
+}
+
+// ═══════════════════════════════════════════════
+// UTILS
+// ═══════════════════════════════════════════════
+function esc(str) {
+  if (!str) return '';
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function formatMoney(n) {
+  if (!n) return '$0';
+  return '$' + Number(n).toFixed(0);
+}
+
+function isDueSoon(dateStr) {
+  if (!dateStr) return false;
+  const d = new Date(dateStr);
+  const diff = (d - new Date()) / (1000*60*60*24);
+  return diff <= 3 && diff >= 0;
+}
+
+// Load saved praise bank
+const savedPraise = load('vf_praise_bank', null);
+if (savedPraise) Object.assign(praiseBank, savedPraise);
+
+// ═══════════════════════════════════════════════
+// GOOGLE SHEETS SYNC
+// ═══════════════════════════════════════════════
+// ── IMPORTANT: This must match YOUR current Apps Script Web App URL ──
+// Find it in: Apps Script editor → Deploy → Manage Deployments → Web app URL
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxVgWxTt8cs45aTjFIpxiXdT5ntsKqTw645QFd4uF2vZ4sVOnzlLVM55igLwd-wcfSZtA/exec';
+
+// Track which Sheet IDs we've already imported so we don't duplicate
+function getSyncedIds() {
+  try { return JSON.parse(localStorage.getItem('vf_synced_ids') || '[]'); } catch { return []; }
+}
+function addSyncedId(id) {
+  const ids = getSyncedIds();
+  if (!ids.includes(id)) { ids.push(id); localStorage.setItem('vf_synced_ids', JSON.stringify(ids)); }
+}
+
+async function syncFromSheet() {
+  const syncBtn = document.getElementById('sync-btn');
+  const syncStatus = document.getElementById('sync-status');
+  if (syncBtn) syncBtn.textContent = '⟳ Syncing...';
+  if (syncStatus) syncStatus.textContent = '';
+
+  try {
+    const res = await fetch(APPS_SCRIPT_URL + '?action=getCommissions', { method: 'GET', redirect: 'follow' });
+    if (!res.ok) throw new Error('Network error: ' + res.status);
+    const data = await res.json();
+
+    if (!Array.isArray(data)) throw new Error('Unexpected response format');
+
+    const syncedIds = getSyncedIds();
+    let newCount = 0;
+
+    data.forEach(row => {
+      const id = row.ID;
+      if (!id || syncedIds.includes(id)) return; // Already imported
+
+      // Check active slot count at import time
+      const activeNow = commissions.filter(c => c.slot === 'active' && c.stage !== 'delivered').length;
+      const slot = activeNow < 3 ? 'active' : 'waitlist';
+
+      // Map Sheet columns to dashboard commission object
+      const c = {
+        id: id,
+        slot: row.Slot || slot,
+        clientName: row.ClientName || 'Unknown',
+        contactMethod: row.ContactMethod || '',
+        email: row.Email || '',
+        type: mapLengthToType(row.Length || ''),
+        basePrice: 0,
+        tipAmount: 0,
+        price: 0,
+        paymentStatus: '',
+        dateReceived: row.Timestamp ? new Date(row.Timestamp).toLocaleDateString() : new Date().toLocaleDateString(),
+        dateDue: row.Deadline || '',
+        preTasks: buildPreTasks(row.Addons || ''),
+        notes: buildNotes(row),
+        stage: 'received',
+        deliveredAt: null,
+        fromForm: true,
+        sheetId: id,
+      };
+
+      commissions.push(c);
+      addSyncedId(id);
+      newCount++;
+    });
+
+    if (newCount > 0) {
+      save('vf_commissions', commissions);
+      renderBoard();
+      if (syncStatus) {
+        syncStatus.textContent = `✓ ${newCount} new submission${newCount > 1 ? 's' : ''} imported`;
+        syncStatus.style.color = 'var(--success)';
+      }
+      if (newCount > 0) showPraise('waitlistMove');
+    } else {
+      if (syncStatus) {
+        syncStatus.textContent = '✓ All up to date';
+        syncStatus.style.color = 'var(--text-ghost)';
+      }
+    }
+  } catch (err) {
+    console.error('Sync error:', err);
+    if (syncStatus) {
+      syncStatus.textContent = '✗ Sync failed — check console';
+      syncStatus.style.color = 'var(--danger)';
+    }
+  }
+
+  if (syncBtn) syncBtn.textContent = '⟳ Sync Form Submissions';
+  // Clear status after 4 seconds
+  setTimeout(() => { if (syncStatus) syncStatus.textContent = ''; }, 4000);
+}
+
+function mapLengthToType(lengthStr) {
+  if (!lengthStr) return 'Other';
+  const l = lengthStr.toLowerCase();
+  if (l.includes('sound alert') || l.includes('10 sec')) return 'Stinger SFX (10sec)';
+  if (l.includes('jingle') || l.includes('sting') || l.includes('30 sec')) return 'Jingle (1min)';
+  if (l.includes('short') || l.includes('2 min')) return 'Short Music (2min)';
+  if (l.includes('standard') || l.includes('3') || l.includes('4 min')) return 'Standard Music (3-4min)';
+  if (l.includes('extended') || l.includes('5+') || l.includes('long')) return 'Extended Music (5min+)';
+  return 'Other';
+}
+
+function buildPreTasks(addonsStr) {
+  if (!addonsStr || addonsStr.includes('None of the above')) return '';
+  const tasks = [];
+  if (addonsStr.includes('instrument or sample pack')) tasks.push('Buy new sample pack');
+  if (addonsStr.includes('Heavy sound effects')) tasks.push('Source heavy SFX');
+  if (addonsStr.includes('Lyric writing')) tasks.push('Write lyrics');
+  if (addonsStr.includes('Rush delivery')) tasks.push('⚡ RUSH ORDER — prioritize');
+  if (addonsStr.includes('Cover or adaptation, basic')) tasks.push('Cover/adaptation (basic)');
+  if (addonsStr.includes('Cover or adaptation, complex')) tasks.push('Cover/adaptation (complex)');
+  if (addonsStr.includes('Music + Map combo')) tasks.push('Map commission also ordered — apply -$5 combo discount');
+  return tasks.join(' | ');
+}
+
+function buildNotes(row) {
+  const parts = [];
+  if (row.Length) parts.push('Length: ' + row.Length);
+  if (row.Genre) parts.push('Genre: ' + row.Genre);
+  if (row.Addons && !row.Addons.includes('None')) parts.push('Add-ons: ' + row.Addons);
+  if (row.Context) parts.push('\nVision: ' + row.Context);
+  if (row.References) parts.push('\nReferences: ' + row.References);
+  if (row.Notes) parts.push('\nExtra notes: ' + row.Notes);
+  if (row.Email) parts.push('\nInvoice email: ' + row.Email);
+  return parts.join('\n');
+}
+
+// ═══════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════
+renderBoard();
+renderReminders();
+renderTodoCats();
+renderTodos();
+renderCalendar();
+renderExpenses();
+
+// Set today's date on expense form
+document.getElementById('exp-date').value = new Date().toISOString().split('T')[0];
+
+// Auto-sync on load (silent -- no UI feedback on first load)
+syncFromSheet();
+
+</script>
+</body>
+</html>
