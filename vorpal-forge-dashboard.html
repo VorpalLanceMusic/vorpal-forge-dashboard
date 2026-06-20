@@ -1313,6 +1313,8 @@
     <button class="tab-btn" onclick="switchPage('coaching', this)">Coaching</button>
     <button class="tab-btn" onclick="switchPage('matchmaking', this)">Matchmaking</button>
     <button class="tab-btn" onclick="switchPage('income', this)">Income</button>
+    <button class="tab-btn" onclick="switchPage('content', this)">Content</button>
+    <button class="tab-btn" onclick="switchPage('patreon', this)">Patreon</button>
   </nav>
 
   <!-- DASHBOARD PAGE -->
@@ -1558,6 +1560,87 @@
     </div>
   </div>
 
+  <div class="page-view" id="page-content">
+    <div class="panel" style="min-height:75vh;">
+      <div class="panel-header">
+        <span class="panel-title">📱 Content Planning</span>
+        <div style="display:flex;gap:6px;">
+          <button class="btn btn-sm" onclick="openBufferLink()">↗ Open Buffer</button>
+          <button class="btn btn-teal btn-sm" onclick="openNewContentIdea()">+ New Idea</button>
+        </div>
+      </div>
+      <div class="panel-body">
+        <div style="margin-bottom:16px;padding:12px 14px;background:var(--bg-card);border:1px solid var(--border-gold);border-radius:var(--radius-sm);">
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;">
+            <div>
+              <div style="font-size:0.7rem;color:var(--gold);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:3px;">Social Media Day</div>
+              <div style="font-size:0.78rem;color:var(--text-dim);">Set which day is yours — a reminder fires the day before to grab screenshots and clips.</div>
+            </div>
+            <select class="form-select" id="social-media-day" style="width:140px;" onchange="saveSocialMediaDay(this.value)">
+              <option value="">Not set</option>
+              <option value="0">Sunday</option>
+              <option value="1">Monday</option>
+              <option value="2">Tuesday</option>
+              <option value="3">Wednesday</option>
+              <option value="4">Thursday</option>
+              <option value="5">Friday</option>
+              <option value="6">Saturday</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="todo-categories" id="content-status-filter">
+          <button class="todo-cat-tab active" onclick="setContentFilter('all')">All</button>
+          <button class="todo-cat-tab" onclick="setContentFilter('idea')">💡 Idea</button>
+          <button class="todo-cat-tab" onclick="setContentFilter('drafted')">✏ Drafted</button>
+          <button class="todo-cat-tab" onclick="setContentFilter('scheduled')">📅 Scheduled</button>
+          <button class="todo-cat-tab" onclick="setContentFilter('posted')">✓ Posted</button>
+        </div>
+
+        <div id="content-idea-list" style="display:grid;grid-template-columns:repeat(auto-fill, minmax(280px, 1fr));gap:10px;margin-top:12px;">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="page-view" id="page-patreon">
+    <div class="panel" style="min-height:75vh;">
+      <div class="panel-header">
+        <span class="panel-title">🖤 Patreon</span>
+        <button class="btn btn-teal btn-sm" onclick="editPatreonInfo()">✎ Update Info</button>
+      </div>
+      <div class="panel-body">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:18px;">
+          <div class="stat-item">
+            <div class="stat-label">Active Patrons</div>
+            <div class="stat-value gold" id="patreon-count">—</div>
+            <div class="stat-sub">manually updated for now</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-label">Monthly Income</div>
+            <div class="stat-value" id="patreon-income" style="color:var(--success);text-shadow:0 0 12px rgba(85,204,136,0.4);">—</div>
+            <div class="stat-sub">manually updated for now</div>
+          </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+          <div class="form-readonly-block" style="padding:14px;">
+            <div class="form-readonly-label" style="color:var(--gold);font-size:0.7rem;margin-bottom:8px;">Next Month's Voting Options</div>
+            <div class="form-readonly-value" id="patreon-voting">Not set yet.</div>
+          </div>
+          <div class="form-readonly-block" style="padding:14px;">
+            <div class="form-readonly-label" style="color:var(--teal);font-size:0.7rem;margin-bottom:8px;">Next Month's Exclusive Track</div>
+            <div class="form-readonly-value" id="patreon-track-status">Not started.</div>
+          </div>
+          <div class="form-readonly-block" style="padding:14px;grid-column:1/-1;">
+            <div class="form-readonly-label" style="color:var(--success);font-size:0.7rem;margin-bottom:8px;">Upcoming Release (Patrons get it 1 week early)</div>
+            <div class="form-readonly-value" id="patreon-release">Nothing scheduled.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
 </div>
 
 <!-- PRAISE OVERLAY -->
@@ -1657,6 +1740,9 @@ let todos = load('vf_todos', []);
 let expenses = load('vf_expenses', []);
 let coachingSessions = load('vf_coaching', []);
 let oneShots = load('vf_oneshots', []);
+let contentIdeas = load('vf_content_ideas', []);
+let patreonInfo = load('vf_patreon_info', { count: '', income: '', voting: '', trackStatus: '', release: '' });
+let currentContentFilter = 'all';
 let calDefault = load('vf_cal_default', {});
 let calCurrent = load('vf_cal_current', {});
 let currentTab = 'active';
@@ -2681,6 +2767,7 @@ function calDrop(e, targetDay) {
 
 function calBlockModal(day, existing) {
   const isEdit = !!existing;
+  const details = existing && existing.details ? existing.details : {};
   showModal(`
     <div class="modal">
       <div class="modal-title">${isEdit ? 'Edit Block — '+day : 'Add to '+day}</div>
@@ -2689,21 +2776,22 @@ function calBlockModal(day, existing) {
         <input class="form-input" id="cb-text" placeholder="e.g. Stream night, Commission work..." value="${existing ? esc(existing.text) : ''}">
       </div>
       <div class="form-group">
-        <label class="form-label">Type</label>
-        <select class="form-select" id="cb-type">
+        <label class="form-label">What is this regarding?</label>
+        <select class="form-select" id="cb-type" onchange="renderCalBlockDetailFields(this.value, ${JSON.stringify(details).replace(/"/g,'&quot;')})">
           ${BLOCK_TYPES.map(t=>`<option value="${t}" ${existing&&existing.type===t?'selected':''}>${t.charAt(0).toUpperCase()+t.slice(1)}</option>`).join('')}
         </select>
       </div>
       <div class="form-row">
         <div class="form-group">
           <label class="form-label">Start Time <span style="color:var(--text-ghost);font-size:0.62rem;">(optional)</span></label>
-          <input class="form-input" id="cb-start" type="time" value="${existing&&existing.startTime ? existing.startTime : ''}">
+          <input class="form-input" id="cb-start" type="time" value="${existing&&existing.startTime ? to24h(existing.startTime) : ''}">
         </div>
         <div class="form-group">
           <label class="form-label">End Time <span style="color:var(--text-ghost);font-size:0.62rem;">(optional)</span></label>
-          <input class="form-input" id="cb-end" type="time" value="${existing&&existing.endTime ? existing.endTime : ''}">
+          <input class="form-input" id="cb-end" type="time" value="${existing&&existing.endTime ? to24h(existing.endTime) : ''}">
         </div>
       </div>
+      <div id="cb-detail-fields"></div>
       <div class="modal-actions">
         ${isEdit ? `<button class="btn" style="color:var(--danger);border-color:var(--danger);" onclick="removeCalBlock('${day}','${existing.id}');closeModal()">Delete</button>` : ''}
         <button class="btn" onclick="closeModal()">Cancel</button>
@@ -2712,6 +2800,66 @@ function calBlockModal(day, existing) {
         </button>
       </div>
     </div>`);
+
+  // Render detail fields for the currently-selected type
+  setTimeout(() => {
+    const typeSelect = document.getElementById('cb-type');
+    renderCalBlockDetailFields(typeSelect.value, details);
+  }, 10);
+}
+
+function to24h(time12) {
+  if (!time12) return '';
+  const match = time12.match(/(\d+):(\d+)\s*(AM|PM)/i);
+  if (!match) return '';
+  let [, h, m, ampm] = match;
+  h = parseInt(h);
+  if (ampm.toUpperCase() === 'PM' && h !== 12) h += 12;
+  if (ampm.toUpperCase() === 'AM' && h === 12) h = 0;
+  return String(h).padStart(2,'0') + ':' + m;
+}
+
+function renderCalBlockDetailFields(type, details) {
+  const container = document.getElementById('cb-detail-fields');
+  if (!container) return;
+  details = details || {};
+
+  if (type === 'stream') {
+    container.innerHTML = `
+      <div class="form-group">
+        <label class="form-label">What's planned for this stream?</label>
+        <textarea class="form-textarea" id="cb-detail-plan" placeholder="e.g. PA Session 50, or working through Caelos lore">${esc(details.plan||'')}</textarea>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Prep needed before stream?</label>
+        <input class="form-input" id="cb-detail-prep" placeholder="e.g. Update DM dashboard, prep encounter" value="${esc(details.prep||'')}">
+      </div>`;
+  } else if (type === 'coaching') {
+    container.innerHTML = `
+      <div class="form-group">
+        <label class="form-label">Who's this coaching session with?</label>
+        <input class="form-input" id="cb-detail-client" placeholder="Client name" value="${esc(details.client||'')}">
+        <div style="font-size:0.62rem;color:var(--text-ghost);margin-top:3px;">Full session details (payment, topic, notes) live in the Coaching tab — this is just the calendar marker.</div>
+      </div>`;
+  } else if (type === 'music') {
+    container.innerHTML = `
+      <div class="form-group">
+        <label class="form-label">What are you working on?</label>
+        <input class="form-input" id="cb-detail-project" placeholder="e.g. Commission for Margaret, or original track" value="${esc(details.project||'')}">
+      </div>`;
+  } else if (type === 'family') {
+    container.innerHTML = `
+      <div class="form-group">
+        <label class="form-label">Notes (optional)</label>
+        <input class="form-input" id="cb-detail-note" placeholder="e.g. Charlie's soccer practice" value="${esc(details.note||'')}">
+      </div>`;
+  } else {
+    container.innerHTML = `
+      <div class="form-group">
+        <label class="form-label">Notes (optional)</label>
+        <input class="form-input" id="cb-detail-note" placeholder="Any additional detail" value="${esc(details.note||'')}">
+      </div>`;
+  }
 }
 
 function addCalBlock(day) { calBlockModal(day, null); }
@@ -2722,11 +2870,28 @@ function editCalBlock(day, id) {
   if (b) calBlockModal(day, b);
 }
 
+function collectCalBlockDetails(type) {
+  if (type === 'stream') {
+    return {
+      plan: document.getElementById('cb-detail-plan')?.value.trim() || '',
+      prep: document.getElementById('cb-detail-prep')?.value.trim() || '',
+    };
+  } else if (type === 'coaching') {
+    return { client: document.getElementById('cb-detail-client')?.value.trim() || '' };
+  } else if (type === 'music') {
+    return { project: document.getElementById('cb-detail-project')?.value.trim() || '' };
+  } else {
+    return { note: document.getElementById('cb-detail-note')?.value.trim() || '' };
+  }
+}
+
 function saveCalBlock(day, existingId) {
   const text = document.getElementById('cb-text').value.trim();
   if (!text) return;
   const startRaw = document.getElementById('cb-start').value;
   const endRaw   = document.getElementById('cb-end').value;
+  const type = document.getElementById('cb-type').value;
+  const details = collectCalBlockDetails(type);
 
   function fmt12(t) {
     if (!t) return '';
@@ -2742,17 +2907,19 @@ function saveCalBlock(day, existingId) {
     const b = calCurrent[day].find(x => x.id === existingId);
     if (b) {
       b.text = text;
-      b.type = document.getElementById('cb-type').value;
+      b.type = type;
       b.startTime = fmt12(startRaw);
       b.endTime   = fmt12(endRaw);
+      b.details = details;
     }
   } else {
     calCurrent[day].push({
       id: 'b_'+Date.now(),
       text,
-      type: document.getElementById('cb-type').value,
+      type,
       startTime: fmt12(startRaw),
       endTime:   fmt12(endRaw),
+      details,
     });
   }
 
@@ -3133,6 +3300,8 @@ function switchPage(pageName, btn) {
   if (pageName === 'coaching') renderCoachingFull();
   if (pageName === 'matchmaking') renderOneShotFull();
   if (pageName === 'income') renderIncomeChart();
+  if (pageName === 'content') renderContentIdeas();
+  if (pageName === 'patreon') renderPatreonInfo();
 }
 
 function switchPageByName(pageName) {
@@ -3360,6 +3529,261 @@ window.addEventListener('resize', () => {
     renderIncomeChart();
   }
 });
+
+// ═══════════════════════════════════════════════
+// CONTENT PLANNING
+// ═══════════════════════════════════════════════
+const CONTENT_CATEGORIES = [
+  'Session Recap', 'Behind the Scenes (Forge)', 'Commission Spotlight',
+  'Lore Drop', 'VTuber/Model Progress', 'Music Release', 'Hoodie/Merch Tease',
+  'Community Engagement (AMA, polls)', 'Patreon Highlight', 'Stream Clip', 'Other'
+];
+const CONTENT_PLATFORMS = ['Twitter/X', 'Instagram', 'TikTok', 'YouTube', 'Discord', 'Facebook', 'Other'];
+const CONTENT_STATUSES = { idea: '💡 Idea', drafted: '✏ Drafted', scheduled: '📅 Scheduled', posted: '✓ Posted' };
+
+function setContentFilter(filter) {
+  currentContentFilter = filter;
+  document.querySelectorAll('#content-status-filter .todo-cat-tab').forEach(b => b.classList.remove('active'));
+  event.target.classList.add('active');
+  renderContentIdeas();
+}
+
+function openBufferLink() {
+  window.open('https://buffer.com', '_blank');
+}
+
+function saveSocialMediaDay(dayValue) {
+  localStorage.setItem('vf_social_media_day', dayValue);
+  updateSocialMediaReminder();
+}
+
+function updateSocialMediaReminder() {
+  const dayValue = localStorage.getItem('vf_social_media_day');
+  if (dayValue === null || dayValue === '') return;
+
+  const targetDay = parseInt(dayValue);
+  const reminderBefore = (targetDay + 6) % 7; // day before
+  const today = new Date().getDay();
+
+  const reminderText = '📱 Tomorrow is Social Media Day — grab screenshots and clips!';
+  const alreadyExists = reminders.some(r => r.text === reminderText);
+
+  if (today === reminderBefore && !alreadyExists) {
+    reminders.push({ id: 'r_smday_' + Date.now(), text: reminderText });
+    save('vf_reminders', reminders);
+    renderReminders();
+  }
+}
+
+function openNewContentIdea() {
+  showModal(`
+    <div class="modal">
+      <div class="modal-title">New Content Idea</div>
+      <div class="form-group">
+        <label class="form-label">What's the idea?</label>
+        <textarea class="form-textarea" id="ci-text" placeholder="e.g. Post the new VTuber model reveal clip"></textarea>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Category</label>
+          <select class="form-select" id="ci-category">
+            ${CONTENT_CATEGORIES.map(c => `<option value="${c}">${c}</option>`).join('')}
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Platform</label>
+          <select class="form-select" id="ci-platform">
+            ${CONTENT_PLATFORMS.map(p => `<option value="${p}">${p}</option>`).join('')}
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Status</label>
+          <select class="form-select" id="ci-status">
+            ${Object.entries(CONTENT_STATUSES).map(([v,l]) => `<option value="${v}">${l}</option>`).join('')}
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Target Date (optional)</label>
+          <input class="form-input" id="ci-date" type="date">
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn" onclick="closeModal()">Cancel</button>
+        <button class="btn btn-teal" onclick="saveNewContentIdea()">Add Idea</button>
+      </div>
+    </div>`);
+}
+
+function saveNewContentIdea() {
+  const text = document.getElementById('ci-text').value.trim();
+  if (!text) return;
+  contentIdeas.push({
+    id: 'ci_' + Date.now(),
+    text,
+    category: document.getElementById('ci-category').value,
+    platform: document.getElementById('ci-platform').value,
+    status: document.getElementById('ci-status').value,
+    targetDate: document.getElementById('ci-date').value || '',
+  });
+  save('vf_content_ideas', contentIdeas);
+  closeModal();
+  renderContentIdeas();
+  showPraise('todo');
+}
+
+function editContentIdea(id) {
+  const idea = contentIdeas.find(c => c.id === id);
+  if (!idea) return;
+  showModal(`
+    <div class="modal">
+      <div class="modal-title">Edit Content Idea</div>
+      <div class="form-group">
+        <label class="form-label">What's the idea?</label>
+        <textarea class="form-textarea" id="ci-text">${esc(idea.text)}</textarea>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Category</label>
+          <select class="form-select" id="ci-category">
+            ${CONTENT_CATEGORIES.map(c => `<option value="${c}" ${idea.category===c?'selected':''}>${c}</option>`).join('')}
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Platform</label>
+          <select class="form-select" id="ci-platform">
+            ${CONTENT_PLATFORMS.map(p => `<option value="${p}" ${idea.platform===p?'selected':''}>${p}</option>`).join('')}
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Status</label>
+          <select class="form-select" id="ci-status">
+            ${Object.entries(CONTENT_STATUSES).map(([v,l]) => `<option value="${v}" ${idea.status===v?'selected':''}>${l}</option>`).join('')}
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Target Date</label>
+          <input class="form-input" id="ci-date" type="date" value="${idea.targetDate||''}">
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn" style="color:var(--danger);border-color:var(--danger);" onclick="deleteContentIdea('${id}');closeModal()">Delete</button>
+        <button class="btn" onclick="closeModal()">Cancel</button>
+        <button class="btn btn-teal" onclick="saveContentIdeaEdit('${id}')">Save</button>
+      </div>
+    </div>`);
+}
+
+function saveContentIdeaEdit(id) {
+  const idea = contentIdeas.find(c => c.id === id);
+  if (!idea) return;
+  idea.text = document.getElementById('ci-text').value.trim();
+  idea.category = document.getElementById('ci-category').value;
+  idea.platform = document.getElementById('ci-platform').value;
+  idea.status = document.getElementById('ci-status').value;
+  idea.targetDate = document.getElementById('ci-date').value || '';
+  save('vf_content_ideas', contentIdeas);
+  closeModal();
+  renderContentIdeas();
+}
+
+function deleteContentIdea(id) {
+  contentIdeas = contentIdeas.filter(c => c.id !== id);
+  save('vf_content_ideas', contentIdeas);
+  renderContentIdeas();
+}
+
+function renderContentIdeas() {
+  const list = document.getElementById('content-idea-list');
+  if (!list) return;
+
+  // Restore social media day selector
+  const savedDay = localStorage.getItem('vf_social_media_day');
+  const daySelect = document.getElementById('social-media-day');
+  if (daySelect && savedDay !== null) daySelect.value = savedDay;
+
+  let filtered = currentContentFilter === 'all' ? contentIdeas : contentIdeas.filter(c => c.status === currentContentFilter);
+
+  if (filtered.length === 0) {
+    list.innerHTML = '<div class="empty-state" style="grid-column:1/-1;">No ideas here yet. Hit "+ New Idea" whenever inspiration strikes.</div>';
+    return;
+  }
+
+  const statusColors = { idea: 'var(--gold)', drafted: 'var(--text-dim)', scheduled: 'var(--teal)', posted: 'var(--success)' };
+
+  list.innerHTML = filtered.map(idea => `
+    <div class="comm-card" style="cursor:pointer;" onclick="editContentIdea('${idea.id}')">
+      <div class="card-top">
+        <span class="card-stage" style="background:rgba(255,255,255,0.05);color:${statusColors[idea.status]};border:1px solid ${statusColors[idea.status]};">${CONTENT_STATUSES[idea.status]}</span>
+        <span class="card-tag">${esc(idea.platform)}</span>
+      </div>
+      <div style="font-size:0.8rem;color:var(--text);margin:6px 0;line-height:1.4;">${esc(idea.text)}</div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px;">
+        <span style="font-size:0.65rem;color:var(--text-ghost);">${esc(idea.category)}</span>
+        ${idea.targetDate ? `<span style="font-size:0.65rem;color:var(--text-dim);">${idea.targetDate}</span>` : ''}
+      </div>
+    </div>`).join('');
+}
+
+// ═══════════════════════════════════════════════
+// PATREON
+// ═══════════════════════════════════════════════
+function editPatreonInfo() {
+  showModal(`
+    <div class="modal">
+      <div class="modal-title">🖤 Update Patreon Info</div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Active Patron Count</label>
+          <input class="form-input" id="pat-count" type="number" value="${patreonInfo.count}" placeholder="e.g. 42">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Monthly Income ($)</label>
+          <input class="form-input" id="pat-income" type="number" value="${patreonInfo.income}" placeholder="e.g. 210">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Next Month's Voting Options</label>
+        <textarea class="form-textarea" id="pat-voting" placeholder="e.g. Option A: Ravenloft track, Option B: Caelos ambient piece">${esc(patreonInfo.voting)}</textarea>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Next Month's Exclusive Track Status</label>
+        <textarea class="form-textarea" id="pat-track" placeholder="e.g. Drafted, needs mixing">${esc(patreonInfo.trackStatus)}</textarea>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Upcoming Release (patrons get it 1 week early)</label>
+        <textarea class="form-textarea" id="pat-release" placeholder="e.g. Mists of Dread — releasing publicly June 30th">${esc(patreonInfo.release)}</textarea>
+      </div>
+      <div class="modal-actions">
+        <button class="btn" onclick="closeModal()">Cancel</button>
+        <button class="btn btn-teal" onclick="savePatreonInfo()">Save</button>
+      </div>
+    </div>`);
+}
+
+function savePatreonInfo() {
+  patreonInfo = {
+    count: document.getElementById('pat-count').value,
+    income: document.getElementById('pat-income').value,
+    voting: document.getElementById('pat-voting').value.trim(),
+    trackStatus: document.getElementById('pat-track').value.trim(),
+    release: document.getElementById('pat-release').value.trim(),
+  };
+  save('vf_patreon_info', patreonInfo);
+  closeModal();
+  renderPatreonInfo();
+}
+
+function renderPatreonInfo() {
+  document.getElementById('patreon-count').textContent = patreonInfo.count || '—';
+  document.getElementById('patreon-income').textContent = patreonInfo.income ? '$' + patreonInfo.income : '—';
+  document.getElementById('patreon-voting').textContent = patreonInfo.voting || 'Not set yet.';
+  document.getElementById('patreon-track-status').textContent = patreonInfo.trackStatus || 'Not started.';
+  document.getElementById('patreon-release').textContent = patreonInfo.release || 'Nothing scheduled.';
+}
 
 // ═══════════════════════════════════════════════
 // COACHING — auto income logging (mirrors commission pattern)
@@ -3952,6 +4376,7 @@ renderCoachingMini();
 renderCoachingFull();
 renderOneShotMini();
 renderOneShotFull();
+updateSocialMediaReminder();
 
 // Set today's date on expense form
 document.getElementById('exp-date').value = new Date().toISOString().split('T')[0];
