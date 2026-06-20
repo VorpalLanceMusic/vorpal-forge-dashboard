@@ -130,6 +130,8 @@
   .tab-btn:hover { color: var(--text); }
   .tab-btn.active { color: var(--teal); border-bottom-color: var(--teal); }
 
+  .income-range-btn.active { background: var(--teal-ghost); border-color: var(--teal-dim); color: var(--teal); }
+
   .page-view { display: none; }
   .page-view.active { display: block; }
 
@@ -1310,6 +1312,7 @@
     <button class="tab-btn active" onclick="switchPage('dashboard', this)">Dashboard</button>
     <button class="tab-btn" onclick="switchPage('coaching', this)">Coaching</button>
     <button class="tab-btn" onclick="switchPage('matchmaking', this)">Matchmaking</button>
+    <button class="tab-btn" onclick="switchPage('income', this)">Income</button>
   </nav>
 
   <!-- DASHBOARD PAGE -->
@@ -1519,6 +1522,38 @@
         <button class="btn btn-teal btn-sm" onclick="openNewOneShot()">+ New One-Shot Request</button>
       </div>
       <div class="panel-body" id="oneshot-full-list" style="display:grid;grid-template-columns:repeat(auto-fill, minmax(320px, 1fr));gap:10px;align-content:start;">
+      </div>
+    </div>
+  </div>
+
+  <div class="page-view" id="page-income">
+    <div class="panel" style="min-height:75vh;">
+      <div class="panel-header">
+        <span class="panel-title">📈 Income & Expense Trends</span>
+        <div style="display:flex;gap:4px;">
+          <button class="btn btn-sm income-range-btn" data-range="30" onclick="setIncomeRange('30', this)">30 Days</button>
+          <button class="btn btn-sm income-range-btn" data-range="90" onclick="setIncomeRange('90', this)">90 Days</button>
+          <button class="btn btn-sm income-range-btn active" data-range="12mo" onclick="setIncomeRange('12mo', this)">12 Months</button>
+          <button class="btn btn-sm income-range-btn" data-range="all" onclick="setIncomeRange('all', this)">All Time</button>
+        </div>
+      </div>
+      <div class="panel-body">
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:18px;">
+          <div class="stat-item">
+            <div class="stat-label">Total Income (range)</div>
+            <div class="stat-value" id="income-range-total" style="color:var(--success);text-shadow:0 0 12px rgba(85,204,136,0.4);">$0</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-label">Total Expenses (range)</div>
+            <div class="stat-value" id="income-range-expenses" style="color:var(--danger);text-shadow:0 0 12px rgba(224,85,85,0.4);">$0</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-label">Net (range)</div>
+            <div class="stat-value gold" id="income-range-net">$0</div>
+          </div>
+        </div>
+        <canvas id="income-chart" style="width:100%;max-height:50vh;"></canvas>
+        <div id="income-chart-empty" class="empty-state" style="display:none;padding:40px;">No income or expense data yet for this range. Once you log entries, the trend will show up here.</div>
       </div>
     </div>
   </div>
@@ -3097,6 +3132,7 @@ function switchPage(pageName, btn) {
 
   if (pageName === 'coaching') renderCoachingFull();
   if (pageName === 'matchmaking') renderOneShotFull();
+  if (pageName === 'income') renderIncomeChart();
 }
 
 function switchPageByName(pageName) {
@@ -3105,6 +3141,225 @@ function switchPageByName(pageName) {
   );
   switchPage(pageName, btn);
 }
+
+// ═══════════════════════════════════════════════
+// INCOME CHART
+// ═══════════════════════════════════════════════
+let currentIncomeRange = '12mo';
+
+function setIncomeRange(range, btn) {
+  currentIncomeRange = range;
+  document.querySelectorAll('.income-range-btn').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  renderIncomeChart();
+}
+
+function getIncomeRangeStart() {
+  const now = new Date();
+  if (currentIncomeRange === '30') {
+    const d = new Date(now); d.setDate(d.getDate() - 30); return d;
+  }
+  if (currentIncomeRange === '90') {
+    const d = new Date(now); d.setDate(d.getDate() - 90); return d;
+  }
+  if (currentIncomeRange === '12mo') {
+    const d = new Date(now); d.setMonth(d.getMonth() - 11); d.setDate(1); return d;
+  }
+  // 'all' — find earliest expense date, or default to 12mo back if no data
+  if (expenses.length === 0) {
+    const d = new Date(now); d.setMonth(d.getMonth() - 11); d.setDate(1); return d;
+  }
+  const earliest = expenses.reduce((min, e) => {
+    const d = new Date(e.date);
+    return d < min ? d : min;
+  }, new Date(expenses[0].date));
+  earliest.setDate(1);
+  return earliest;
+}
+
+function renderIncomeChart() {
+  const canvas = document.getElementById('income-chart');
+  const emptyMsg = document.getElementById('income-chart-empty');
+  if (!canvas) return;
+
+  const startDate = getIncomeRangeStart();
+  const now = new Date();
+
+  // Build month buckets between startDate and now
+  const buckets = [];
+  const cursor = new Date(startDate.getFullYear(), startDate.getMonth(), 1);
+  while (cursor <= now) {
+    buckets.push({
+      year: cursor.getFullYear(),
+      month: cursor.getMonth(),
+      label: cursor.toLocaleDateString('en-US', { month: 'short', year: '2-digit' }),
+      income: 0,
+      expense: 0,
+    });
+    cursor.setMonth(cursor.getMonth() + 1);
+  }
+
+  // For short ranges (30/90 days) use daily buckets instead of monthly
+  const useDaily = currentIncomeRange === '30' || currentIncomeRange === '90';
+  let dailyBuckets = [];
+  if (useDaily) {
+    dailyBuckets = [];
+    const dCursor = new Date(startDate);
+    while (dCursor <= now) {
+      dailyBuckets.push({
+        dateStr: dCursor.toISOString().split('T')[0],
+        label: dCursor.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+        income: 0,
+        expense: 0,
+      });
+      dCursor.setDate(dCursor.getDate() + 1);
+    }
+  }
+
+  let totalIncome = 0, totalExpense = 0;
+
+  expenses.forEach(e => {
+    const d = new Date(e.date);
+    if (d < startDate || d > now) return;
+    const amt = e.amount || 0;
+
+    if (e.type === 'income') totalIncome += amt; else totalExpense += amt;
+
+    if (useDaily) {
+      const dateStr = e.date;
+      const bucket = dailyBuckets.find(b => b.dateStr === dateStr);
+      if (bucket) {
+        if (e.type === 'income') bucket.income += amt; else bucket.expense += amt;
+      }
+    } else {
+      const bucket = buckets.find(b => b.year === d.getFullYear() && b.month === d.getMonth());
+      if (bucket) {
+        if (e.type === 'income') bucket.income += amt; else bucket.expense += amt;
+      }
+    }
+  });
+
+  const activeBuckets = useDaily ? dailyBuckets : buckets;
+
+  document.getElementById('income-range-total').textContent = '$' + totalIncome.toFixed(2);
+  document.getElementById('income-range-expenses').textContent = '$' + totalExpense.toFixed(2);
+  const net = totalIncome - totalExpense;
+  const netEl = document.getElementById('income-range-net');
+  netEl.textContent = (net < 0 ? '-$' + Math.abs(net).toFixed(2) : '$' + net.toFixed(2));
+  netEl.style.color = net < 0 ? 'var(--danger)' : 'var(--gold)';
+
+  if (totalIncome === 0 && totalExpense === 0) {
+    canvas.style.display = 'none';
+    emptyMsg.style.display = 'block';
+    return;
+  }
+  canvas.style.display = 'block';
+  emptyMsg.style.display = 'none';
+
+  drawIncomeChart(canvas, activeBuckets);
+}
+
+function drawIncomeChart(canvas, buckets) {
+  const ctx = canvas.getContext('2d');
+  const dpr = window.devicePixelRatio || 1;
+  const rect = canvas.getBoundingClientRect();
+  const W = rect.width;
+  const H = 380;
+
+  canvas.width = W * dpr;
+  canvas.height = H * dpr;
+  canvas.style.height = H + 'px';
+  ctx.scale(dpr, dpr);
+  ctx.clearRect(0, 0, W, H);
+
+  const padding = { top: 20, right: 20, bottom: 50, left: 60 };
+  const chartW = W - padding.left - padding.right;
+  const chartH = H - padding.top - padding.bottom;
+
+  const maxVal = Math.max(...buckets.map(b => Math.max(b.income, b.expense)), 10);
+  const niceMax = Math.ceil(maxVal / 50) * 50 || 50;
+
+  // Gridlines + Y axis labels
+  ctx.strokeStyle = 'rgba(0, 212, 200, 0.1)';
+  ctx.fillStyle = '#4a5a70';
+  ctx.font = '10px Inter, sans-serif';
+  ctx.textAlign = 'right';
+  const gridLines = 5;
+  for (let i = 0; i <= gridLines; i++) {
+    const y = padding.top + chartH - (chartH * i / gridLines);
+    const val = niceMax * i / gridLines;
+    ctx.beginPath();
+    ctx.moveTo(padding.left, y);
+    ctx.lineTo(W - padding.right, y);
+    ctx.stroke();
+    ctx.fillText('$' + val.toFixed(0), padding.left - 8, y + 3);
+  }
+
+  // Bars
+  const n = buckets.length;
+  const slotW = chartW / n;
+  const barW = Math.min(slotW * 0.5, 36);
+  const expenseBarW = barW * 0.4;
+
+  buckets.forEach((b, i) => {
+    const slotX = padding.left + i * slotW + slotW / 2;
+
+    // Income bar
+    const incomeH = (b.income / niceMax) * chartH;
+    const incomeY = padding.top + chartH - incomeH;
+    const grad = ctx.createLinearGradient(0, incomeY, 0, padding.top + chartH);
+    grad.addColorStop(0, '#00d4c8');
+    grad.addColorStop(1, 'rgba(0, 212, 200, 0.3)');
+    ctx.fillStyle = grad;
+    ctx.fillRect(slotX - barW / 2, incomeY, barW, incomeH);
+
+    // Expense bar (thin overlay, offset slightly right, red/danger)
+    if (b.expense > 0) {
+      const expenseH = (b.expense / niceMax) * chartH;
+      const expenseY = padding.top + chartH - expenseH;
+      ctx.fillStyle = 'rgba(224, 85, 85, 0.75)';
+      ctx.fillRect(slotX + barW / 2 - expenseBarW, expenseY, expenseBarW, expenseH);
+    }
+
+    // X axis label
+    ctx.fillStyle = '#8a9ab0';
+    ctx.font = '9px Inter, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.save();
+    if (n > 20) {
+      // Rotate labels if too many bars to fit horizontally
+      if (i % Math.ceil(n / 15) === 0) {
+        ctx.translate(slotX, H - padding.bottom + 14);
+        ctx.rotate(-Math.PI / 4);
+        ctx.textAlign = 'right';
+        ctx.fillText(b.label, 0, 0);
+      }
+    } else {
+      ctx.fillText(b.label, slotX, H - padding.bottom + 16);
+    }
+    ctx.restore();
+  });
+
+  // Legend
+  ctx.fillStyle = '#00d4c8';
+  ctx.fillRect(padding.left, 4, 10, 10);
+  ctx.fillStyle = '#8a9ab0';
+  ctx.font = '10px Inter, sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText('Income', padding.left + 16, 13);
+
+  ctx.fillStyle = 'rgba(224, 85, 85, 0.75)';
+  ctx.fillRect(padding.left + 80, 4, 10, 10);
+  ctx.fillStyle = '#8a9ab0';
+  ctx.fillText('Expenses', padding.left + 96, 13);
+}
+
+window.addEventListener('resize', () => {
+  const incomePage = document.getElementById('page-income');
+  if (incomePage && incomePage.classList.contains('active')) {
+    renderIncomeChart();
+  }
+});
 
 // ═══════════════════════════════════════════════
 // COACHING — auto income logging (mirrors commission pattern)
