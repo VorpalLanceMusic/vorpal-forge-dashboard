@@ -1788,6 +1788,7 @@ function renderActiveCard(c) {
     <div class="card-top">
       <div>
         <div class="card-client">${esc(c.clientName)} <span class="card-contact">(${esc(c.contactMethod)})</span></div>
+        ${c.songTitle ? `<div style="font-size:0.7rem;color:var(--teal-dim);font-style:italic;margin-top:1px;">"${esc(c.songTitle)}"</div>` : ''}
       </div>
       <span class="card-stage ${stageClass}">${stageLabel}</span>
     </div>
@@ -1842,6 +1843,7 @@ function renderWaitlistCard(c, position) {
         <div style="display:flex;align-items:center;gap:7px;flex-wrap:wrap;">
           <span class="wc-name">${esc(c.clientName)}</span>
           <span class="wc-tag" style="font-size:0.6rem;color:var(--text-ghost);">(${esc(c.contactMethod)})</span>
+          ${c.songTitle ? `<span style="font-size:0.66rem;color:var(--teal-dim);font-style:italic;">"${esc(c.songTitle)}"</span>` : ''}
         </div>
         <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
           <span class="card-tag" style="font-size:0.6rem;">${esc(c.type)}</span>
@@ -2164,29 +2166,34 @@ function openCommissionDetail(id) {
 }
 
 function renderFormResponsesReadout(c) {
-  if (!c.notes) {
+  const fd = c.formData;
+  if (!fd) {
     return '<div class="empty-state">No additional details on file.</div>';
   }
-  // Notes blob was built with labeled lines like "Genre: X" — split and display cleanly
-  const lines = c.notes.split('\n').filter(l => l.trim());
-  let html = '';
-  lines.forEach(line => {
-    const colonIdx = line.indexOf(':');
-    if (colonIdx > 0 && colonIdx < 40) {
-      const label = line.slice(0, colonIdx).trim();
-      const value = line.slice(colonIdx + 1).trim();
-      if (value) {
-        html += `<div class="form-readonly-block">
-          <div class="form-readonly-label">${esc(label)}</div>
-          <div class="form-readonly-value">${esc(value)}</div>
-        </div>`;
-      }
-    } else if (line.trim()) {
-      html += `<div class="form-readonly-block">
-        <div class="form-readonly-value">${esc(line.trim())}</div>
-      </div>`;
-    }
-  });
+
+  const fields = [
+    { label: 'Song Title', value: c.songTitle },
+    { label: 'Length', value: fd.length },
+    { label: 'Loop or Start/End', value: fd.loop },
+    { label: 'Genre', value: fd.genre },
+    { label: 'Mood & Feel', value: fd.mood },
+    { label: 'What This Is For / Feel', value: fd.context },
+    { label: 'Specific Instruments / Moments', value: fd.instruments },
+    { label: 'Reference Tracks', value: fd.references },
+    { label: 'Music Add-Ons Selected', value: fd.addons && !fd.addons.includes('None') ? fd.addons : '' },
+    { label: 'Stream Permissions', value: fd.streamPermissions },
+    { label: 'Anything Else', value: fd.otherNotes },
+    { label: 'How They Heard About Vorpal Forge', value: fd.howHeard },
+    { label: 'Invoice Email', value: fd.email },
+  ];
+
+  const html = fields
+    .filter(f => f.value && f.value.trim())
+    .map(f => `<div class="form-readonly-block">
+      <div class="form-readonly-label">${esc(f.label)}</div>
+      <div class="form-readonly-value">${esc(f.value)}</div>
+    </div>`).join('');
+
   return html || '<div class="empty-state">No additional details on file.</div>';
 }
 
@@ -2989,7 +2996,22 @@ async function syncFromSheet() {
         dateReceived: row.Timestamp ? new Date(row.Timestamp).toLocaleDateString() : new Date().toLocaleDateString(),
         dateDue: row.Deadline || '',
         preTasks: buildPreTasks(row.Addons || ''),
-        notes: buildNotes(row),
+        notes: '', // Notes are Vorpal's own — never pre-filled from form data
+        songTitle: row.SongTitle || '',
+        formData: {
+          streamPermissions: row.StreamPermissions || '',
+          addons: row.Addons || '',
+          length: row.Length || '',
+          loop: row.Loop || '',
+          genre: row.Genre || '',
+          mood: row.Mood || '',
+          context: row.Context || '',
+          instruments: row.Instruments || '',
+          references: row.References || '',
+          otherNotes: row.OtherNotes || '',
+          howHeard: row.HowHeard || '',
+          email: row.Email || '',
+        },
         stage: 'received',
         deliveredAt: null,
         fromForm: true,
