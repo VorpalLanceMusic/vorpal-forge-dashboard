@@ -410,6 +410,10 @@
   .stage-revision { background: rgba(200, 100, 0, 0.15); color: #e08040; border: 1px solid rgba(224, 128, 64, 0.25); }
   .stage-delivered { background: rgba(85, 204, 136, 0.15); color: var(--success); border: 1px solid rgba(85, 204, 136, 0.25); }
 
+  .tier-vault { background: rgba(92, 225, 208, 0.15); color: #5CE1D0; border: 1px solid rgba(92, 225, 208, 0.3); }
+  .tier-custom { background: rgba(201, 162, 75, 0.15); color: var(--gold); border: 1px solid var(--border-gold); }
+  .tier-firsttime { background: rgba(150, 180, 255, 0.15); color: #b9d0ff; border: 1px solid rgba(150, 180, 255, 0.3); }
+
   .card-row {
     display: flex;
     justify-content: space-between;
@@ -1521,6 +1525,8 @@
     <div class="panel" style="min-height:75vh;">
       <div class="panel-header">
         <span class="panel-title">⚔ One-Shot Matchmaking</span>
+        <span id="oneshot-sync-status" style="font-size:0.65rem;color:var(--text-ghost);"></span>
+        <button class="btn btn-sm" id="oneshot-sync-btn" onclick="syncOneShotsFromSheet()">⟳ Sync Form Submissions</button>
         <button class="btn btn-teal btn-sm" onclick="openNewOneShot()">+ New One-Shot Request</button>
       </div>
       <div class="panel-body" id="oneshot-full-list" style="display:grid;grid-template-columns:repeat(auto-fill, minmax(320px, 1fr));gap:10px;align-content:start;">
@@ -3252,6 +3258,135 @@ async function syncFromSheet() {
   setTimeout(() => { if (syncStatus) syncStatus.textContent = ''; }, 4000);
 }
 
+// ═══════════════════════════════════════════════════════════════
+// ONE-SHOT BOOKING SYNC — separate tracker, separate array,
+// mirrors syncFromSheet() above but pulls OneShotQueue instead.
+// ═══════════════════════════════════════════════════════════════
+
+function getSyncedOneShotIds() {
+  try { return JSON.parse(localStorage.getItem('vf_synced_oneshot_ids') || '[]'); } catch { return []; }
+}
+function addSyncedOneShotId(id) {
+  const ids = getSyncedOneShotIds();
+  if (!ids.includes(id)) { ids.push(id); localStorage.setItem('vf_synced_oneshot_ids', JSON.stringify(ids)); }
+}
+
+// Turns "Which tier are you booking?" answer into a short label + a color tag class
+function mapTierLabel(tierStr) {
+  if (!tierStr) return { label: 'Unknown', cls: '' };
+  const t = tierStr.toLowerCase();
+  if (t.includes('my first time')) return { label: 'My First Time', cls: 'tier-firsttime' };
+  if (t.includes('vault')) return { label: 'The Vault', cls: 'tier-vault' };
+  if (t.includes('custom')) return { label: 'Custom', cls: 'tier-custom' };
+  return { label: tierStr, cls: '' };
+}
+
+// Picks whichever one-shot field actually has a value for this booking
+function resolveOneShotTitle(row) {
+  return row.LegendChoice || row.VaultChoice || (row.CustomVision ? 'Custom (see vision below)' : 'Not specified');
+}
+
+// Maps the form's "full group / partial / waitlist" answer to the
+// existing partyStatus values the dashboard already understands
+function mapPartyStatus(groupStatusStr) {
+  if (!groupStatusStr) return 'needs-matchmaking';
+  const g = groupStatusStr.toLowerCase();
+  if (g.includes('full group')) return 'full-party';
+  return 'needs-matchmaking'; // partial group or waitlist both need matchmaking
+}
+
+async function syncOneShotsFromSheet() {
+  const syncBtn = document.getElementById('oneshot-sync-btn');
+  const syncStatus = document.getElementById('oneshot-sync-status');
+  if (syncBtn) syncBtn.textContent = '⟳ Syncing...';
+  if (syncStatus) syncStatus.textContent = '';
+
+  try {
+    const res = await fetch(APPS_SCRIPT_URL + '?action=getOneShots', { method: 'GET', redirect: 'follow' });
+    if (!res.ok) throw new Error('Network error: ' + res.status);
+    const data = await res.json();
+
+    if (!Array.isArray(data)) throw new Error('Unexpected response format');
+
+    const syncedIds = getSyncedOneShotIds();
+    let newCount = 0;
+
+    data.forEach(row => {
+      const id = row.ID;
+      if (!id || syncedIds.includes(id)) return; // Already imported
+
+      const tierInfo = mapTierLabel(row.Tier || '');
+      const oneShotTitle = resolveOneShotTitle(row);
+
+      const req = {
+        id: id,
+        clientName: row.ClientName || 'Unknown',
+        contactMethod: row.ContactMethod || '',
+        looking: oneShotTitle,
+        price: 0, // Vorpal sets once confirmed -- tier/player count vary
+        paymentStatus: '',
+        scheduled: false,
+        partyStatus: mapPartyStatus(row.GroupStatus || ''),
+        prepped: true, // Vault/My First Time are pre-built; Custom starts unprepped
+        prepTasks: '',
+        tags: (row.VibeTags || '').split(',').map(t => t.trim()).filter(Boolean),
+        // Extra form data, never overwritten by Vorpal's own notes/edits
+        formData: {
+          tier: tierInfo.label,
+          tierClass: tierInfo.cls,
+          email: row.Email || '',
+          groupStatus: row.GroupStatus || '',
+          playerCount: row.PlayerCount || '',
+          playerNames: row.PlayerNames || '',
+          experienceLevel: row.ExperienceLevel || '',
+          playstyleNotes: row.PlaystyleNotes || '',
+          customVision: row.CustomVision || '',
+          customDislikes: row.CustomDislikes || '',
+          conflictStyle: row.ConflictStyle || '',
+          hardLimits: row.HardLimits || '',
+          softLimits: row.SoftLimits || '',
+          checkInMethod: row.CheckInMethod || '',
+        },
+        notes: '', // Vorpal's own -- never pre-filled from form data
+        stage: 'received',
+        fromForm: true,
+        sheetId: id,
+      };
+
+      // Custom bookings start unprepped, since they're built from scratch
+      if (tierInfo.label === 'Custom') req.prepped = false;
+
+      oneShots.push(req);
+      addSyncedOneShotId(id);
+      newCount++;
+    });
+
+    if (newCount > 0) {
+      save('vf_oneshots', oneShots);
+      renderOneShotMini();
+      renderOneShotFull();
+      if (syncStatus) {
+        syncStatus.textContent = `✓ ${newCount} new booking${newCount > 1 ? 's' : ''} added`;
+        syncStatus.style.color = 'var(--success)';
+      }
+    } else {
+      if (syncStatus) {
+        syncStatus.textContent = '✓ All up to date';
+        syncStatus.style.color = 'var(--text-ghost)';
+      }
+    }
+  } catch (err) {
+    console.error('One-shot sync error:', err);
+    if (syncStatus) {
+      syncStatus.textContent = '✗ Sync failed -- check console';
+      syncStatus.style.color = 'var(--danger)';
+    }
+  }
+
+  if (syncBtn) syncBtn.textContent = '⟳ Sync Form Submissions';
+  setTimeout(() => { if (syncStatus) syncStatus.textContent = ''; }, 4000);
+}
+
 function mapLengthToType(lengthStr) {
   if (!lengthStr) return 'Other';
   const l = lengthStr.toLowerCase();
@@ -4341,10 +4476,14 @@ function renderOneShotFull() {
     const hasMatch = matches.length > 0;
     const payLabel = r.paymentStatus ? (PAY_LABELS[r.paymentStatus]||'') : '';
     const payClass = r.paymentStatus ? (PAY_CLASSES[r.paymentStatus]||'') : '';
+    const fd = r.formData || {};
+    const tierBadge = fd.tier ? `<span class="card-stage ${fd.tierClass||''}">${esc(fd.tier)}</span>` : '';
+    const safetyFlag = (fd.hardLimits || fd.softLimits) ? `<div style="font-size:0.68rem;color:var(--gold-dim);margin-top:4px;">⚠ Safety notes on file</div>` : '';
 
     return `<div class="comm-card ${hasMatch ? 'match-highlight' : 'active-card'}" onclick="openEditOneShot('${r.id}')">
       <div class="card-top">
         <div class="card-client">${esc(r.clientName)} <span class="card-contact">(${esc(r.contactMethod)})</span></div>
+        ${tierBadge}
         ${hasMatch ? `<span class="card-stage" style="background:var(--gold-ghost);color:var(--gold);border:1px solid var(--border-gold);">🔗 ${matches.length} Match${matches.length>1?'es':''}</span>` : ''}
       </div>
       ${r.looking ? `<div style="font-size:0.74rem;color:var(--text-dim);margin-bottom:6px;">${esc(r.looking)}</div>` : ''}
@@ -4359,6 +4498,7 @@ function renderOneShotFull() {
       </div>
       <div style="margin-bottom:6px;">${(r.tags||[]).map(t => `<span class="tag-badge">${esc(t)}</span>`).join('')}</div>
       ${r.prepTasks ? `<div class="card-tasks"><div class="card-tasks-label">Prep Left To Do</div><div class="card-tasks-text">${esc(r.prepTasks)}</div></div>` : ''}
+      ${safetyFlag}
       ${hasMatch ? `<div class="card-tasks" style="margin-top:6px;border-top:1px solid var(--border-gold);"><div class="card-tasks-label" style="color:var(--gold-dim);">Potential Matches</div>
         ${matches.slice(0,3).map(m => `<div style="font-size:0.72rem;color:var(--text);margin-top:2px;">• ${esc(m.req.clientName)} (${m.overlap} tag${m.overlap>1?'s':''} in common)</div>`).join('')}
       </div>` : ''}
@@ -4383,6 +4523,7 @@ document.getElementById('exp-date').value = new Date().toISOString().split('T')[
 
 // Auto-sync on load (silent -- no UI feedback on first load)
 syncFromSheet();
+syncOneShotsFromSheet();
 
 </script>
 </body>
