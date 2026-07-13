@@ -194,7 +194,7 @@
   /* Main top section: stats col + commissions + reminders col */
   .top-section {
     display: grid;
-    grid-template-columns: 200px 1fr 220px 260px;
+    grid-template-columns: 170px 1fr 1fr 200px 220px;
     gap: 14px;
     min-height: 0;
   }
@@ -1316,7 +1316,6 @@
     <button class="tab-btn active" onclick="switchPage('dashboard', this)">Dashboard</button>
     <button class="tab-btn" onclick="switchPage('coaching', this)">Coaching</button>
     <button class="tab-btn" onclick="switchPage('matchmaking', this)">Matchmaking</button>
-    <button class="tab-btn" onclick="switchPage('maps', this)">Maps</button>
     <button class="tab-btn" onclick="switchPage('income', this)">Income</button>
     <button class="tab-btn" onclick="switchPage('content', this)">Content</button>
     <button class="tab-btn" onclick="switchPage('patreon', this)">Patreon</button>
@@ -1372,8 +1371,8 @@
     <!-- COMMISSION BOARD (center) -->
     <div class="panel commission-board">
       <div class="board-header">
-        <span class="panel-title">Commission Board</span>
-        <button class="btn btn-teal btn-sm" onclick="openNewCommission()">+ New Commission</button>
+        <span class="panel-title">🎵 Music</span>
+        <button class="btn btn-teal btn-sm" onclick="openNewCommission()">+ New</button>
       </div>
       <div class="board-3col">
         <div class="board-col">
@@ -1399,6 +1398,37 @@
             </div>
           </div>
           <div class="board-col-body" id="col-delivered"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MAP COMMISSION BOARD (center, next to Music) -->
+    <div class="panel commission-board">
+      <div class="board-header">
+        <span class="panel-title">🗺️ Maps</span>
+        <button class="btn btn-teal btn-sm" onclick="openNewMap()">+ New</button>
+      </div>
+      <div class="board-3col">
+        <div class="board-col">
+          <div class="board-col-header">
+            <span class="board-col-title gold">Waitlist</span>
+            <span id="col-map-wait-count" style="font-size:0.62rem;color:var(--text-ghost);">0</span>
+          </div>
+          <div class="board-col-body" id="col-map-waitlist"></div>
+        </div>
+        <div class="board-col">
+          <div class="board-col-header">
+            <span class="board-col-title teal">Active</span>
+            <span id="col-map-active-count" style="font-size:0.62rem;color:var(--text-ghost);">0/3</span>
+          </div>
+          <div class="board-col-body" id="col-map-active"></div>
+        </div>
+        <div class="board-col">
+          <div class="board-col-header">
+            <span class="board-col-title green">Delivered</span>
+            <span id="col-map-delivered-count" style="font-size:0.62rem;color:var(--text-ghost);">0</span>
+          </div>
+          <div class="board-col-body" id="col-map-delivered"></div>
         </div>
       </div>
     </div>
@@ -1440,16 +1470,7 @@
             <button class="btn-icon" onclick="switchPageByName('matchmaking')" title="Full Matchmaking View">↗</button>
           </span>
         </div>
-        <div class="mini-panel-list" id="mini-oneshot-list" style="margin-bottom:14px;"></div>
-
-        <div style="font-size:0.62rem;color:var(--text-ghost);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;">
-          <span>Map Queue</span>
-          <span style="display:flex;gap:4px;">
-            <button class="btn-icon" onclick="openNewMap()" title="New Map Commission">+</button>
-            <button class="btn-icon" onclick="switchPageByName('maps')" title="Full Map Board View">↗</button>
-          </span>
-        </div>
-        <div class="mini-panel-list" id="mini-map-list"></div>
+        <div class="mini-panel-list" id="mini-oneshot-list"></div>
       </div>
     </div>
   </div>
@@ -1543,39 +1564,6 @@
         <button class="btn btn-teal btn-sm" onclick="openNewOneShot()">+ New One-Shot Request</button>
       </div>
       <div class="panel-body" id="oneshot-full-list" style="display:grid;grid-template-columns:repeat(auto-fill, minmax(320px, 1fr));gap:10px;align-content:start;">
-      </div>
-    </div>
-  </div>
-
-  <!-- MAPS PAGE -->
-  <div class="page-view" id="page-maps">
-    <div class="panel commission-board" style="min-height:75vh;">
-      <div class="board-header">
-        <span class="panel-title">🗺️ Map Commission Board</span>
-        <button class="btn btn-teal btn-sm" onclick="openNewMap()">+ New Map Commission</button>
-      </div>
-      <div class="board-3col">
-        <div class="board-col">
-          <div class="board-col-header">
-            <span class="board-col-title gold">Waitlist</span>
-            <span id="col-map-wait-count" style="font-size:0.62rem;color:var(--text-ghost);">0</span>
-          </div>
-          <div class="board-col-body" id="col-map-waitlist"></div>
-        </div>
-        <div class="board-col">
-          <div class="board-col-header">
-            <span class="board-col-title teal">Active</span>
-            <span id="col-map-active-count" style="font-size:0.62rem;color:var(--text-ghost);">0/3</span>
-          </div>
-          <div class="board-col-body" id="col-map-active"></div>
-        </div>
-        <div class="board-col">
-          <div class="board-col-header">
-            <span class="board-col-title green">Delivered</span>
-            <span id="col-map-delivered-count" style="font-size:0.62rem;color:var(--text-ghost);">0</span>
-          </div>
-          <div class="board-col-body" id="col-map-delivered"></div>
-        </div>
       </div>
     </div>
   </div>
@@ -2146,8 +2134,6 @@ function renderMapBoard() {
   colDelivered.innerHTML = delivered.length === 0
     ? '<div class="empty-state">Nothing delivered yet.</div>'
     : delivered.map(c => renderMapDeliveredCard(c)).join('');
-
-  renderMapMini();
 }
 
 function comboFlagHtml(c) {
@@ -2310,27 +2296,6 @@ function deleteMapCommission(id) {
   mapCommissions = mapCommissions.filter(c => c.id !== id);
   save('vf_maps', mapCommissions);
   renderMapBoard();
-}
-
-function renderMapMini() {
-  const el = document.getElementById('mini-map-list');
-  if (!el) return;
-  const upcoming = mapCommissions.filter(c => c.slot !== 'archive' && c.stage !== 'delivered').slice(0, 5);
-  if (upcoming.length === 0) {
-    el.innerHTML = '<div class="empty-state" style="padding:8px 0;font-size:0.7rem;">Queue is clear.</div>';
-    return;
-  }
-  el.innerHTML = upcoming.map(c => `
-    <div class="mini-card" onclick="switchPageByName('maps')">
-      <div class="mini-card-top">
-        <span class="mini-card-name">${esc(c.clientName)}</span>
-        <span class="mini-card-sub">${esc(c.mapType || 'Map')}</span>
-      </div>
-      <div class="mini-card-sub">${esc((c.mapTitle||c.context||'').slice(0,50))}${(c.mapTitle||c.context||'').length>50?'...':''}</div>
-      <div class="status-dots">
-        <span class="status-dot ${c.slot==='active'?'on':''}">${c.slot==='active'?'Active':'Waitlist'}</span>
-      </div>
-    </div>`).join('');
 }
 
 function openNewMap() {
