@@ -191,6 +191,31 @@
     box-shadow: 0 0 12px var(--gold-ghost);
   }
 
+  /* Attached player sub-cards, nested directly under a One-Shot card */
+  .attached-subcard {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--teal-dim);
+    border-radius: var(--radius-sm);
+    padding: 5px 8px;
+    margin-top: 5px;
+    font-size: 0.68rem;
+  }
+  .attached-subcard-name { color: var(--text); font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .attached-subcard-x {
+    flex-shrink: 0;
+    color: var(--danger);
+    cursor: pointer;
+    font-size: 0.7rem;
+    opacity: 0.75;
+    padding: 0 2px;
+  }
+  .attached-subcard-x:hover { opacity: 1; }
+
   /* Main top section: stats col + commissions + reminders col */
   .top-section {
     display: grid;
@@ -631,6 +656,35 @@
   }
 
   .btn:hover { border-color: var(--teal-dim); color: var(--teal); }
+  .btn:active { transform: scale(0.93); }
+
+  /* ── ACTION FEEDBACK ANIMATIONS ── */
+  @keyframes cardFlash {
+    0%   { box-shadow: 0 0 0 rgba(0,212,200,0); transform: scale(1); }
+    35%  { box-shadow: 0 0 22px var(--teal-glow); transform: scale(1.02); }
+    100% { box-shadow: 0 0 0 rgba(0,212,200,0); transform: scale(1); }
+  }
+  .card-flash { animation: cardFlash 0.55s ease; }
+
+  @keyframes cardFlashGold {
+    0%   { box-shadow: 0 0 0 rgba(240,192,64,0); transform: scale(1); }
+    35%  { box-shadow: 0 0 22px var(--gold-glow); transform: scale(1.02); }
+    100% { box-shadow: 0 0 0 rgba(240,192,64,0); transform: scale(1); }
+  }
+  .card-flash-gold { animation: cardFlashGold 0.55s ease; }
+
+  @keyframes chipPop {
+    0%   { transform: scale(0.5); opacity: 0; }
+    60%  { transform: scale(1.08); opacity: 1; }
+    100% { transform: scale(1); opacity: 1; }
+  }
+  .chip-pop { animation: chipPop 0.35s ease; }
+
+  @keyframes chipUnattach {
+    0%   { transform: scale(1) translateX(0); opacity: 1; }
+    100% { transform: scale(0.8) translateX(12px); opacity: 0; }
+  }
+  .chip-leaving { animation: chipUnattach 0.25s ease forwards; }
 
   .btn-teal {
     background: var(--teal-ghost);
@@ -1803,6 +1857,21 @@ function getRandomPraise(ctx) {
   return pool[Math.floor(Math.random() * pool.length)];
 }
 
+// Lightweight per-card feedback -- flashes a single card's border/glow on its
+// next render without the full-screen praise/confetti treatment. Used for
+// smaller actions (stage bumps, attach/unattach) where confetti every click
+// would get old fast.
+let flashCardId = null;
+let flashCardColor = 'teal';
+function flashCard(id, color) {
+  flashCardId = id;
+  flashCardColor = color || 'teal';
+  setTimeout(() => { flashCardId = null; }, 50);
+}
+function flashClassFor(id) {
+  return flashCardId === id ? (flashCardColor === 'gold' ? 'card-flash-gold' : 'card-flash') : '';
+}
+
 function showPraise(ctx) {
   const p = getRandomPraise(ctx);
   const overlay = document.getElementById('praise-overlay');
@@ -2017,7 +2086,7 @@ function renderActiveCard(c) {
   const prevLabel = prevStage ? STAGE_LABELS[prevStage] : null;
   const nextLabel = nextStage ? STAGE_LABELS[nextStage] : null;
 
-  return `<div class="comm-card active-card" onclick="openCommissionDetail('${c.id}')">
+  return `<div class="comm-card active-card ${flashClassFor(c.id)}" onclick="openCommissionDetail('${c.id}')">
     <div class="card-top">
       <div>
         <div class="card-client">${esc(c.clientName)} <span class="card-contact">(${esc(c.contactMethod)})</span></div>
@@ -2070,7 +2139,7 @@ function renderDeliveredCard(c) {
 function renderWaitlistCard(c, position) {
   const payClass = c.paymentStatus ? (PAY_CLASSES[c.paymentStatus] || '') : '';
   const payLabel = c.paymentStatus ? (PAY_LABELS[c.paymentStatus] || '') : '';
-  return `<div class="waitlist-card-collapsed" onclick="toggleWaitlistExpand('${c.id}', this)">
+  return `<div class="waitlist-card-collapsed ${flashClassFor(c.id)}" onclick="toggleWaitlistExpand('${c.id}', this)">
     <div class="wc-left" style="gap:8px;">
       <span style="font-family:'JetBrains Mono',monospace;font-size:0.7rem;color:var(--gold);opacity:0.7;flex-shrink:0;">#${position}</span>
       <div style="display:flex;flex-direction:column;gap:2px;flex:1;min-width:0;">
@@ -2122,6 +2191,8 @@ function setStage(id, newStage) {
   if (newStage === 'delivered' && prevStage !== 'delivered') {
     c.deliveredAt = Date.now();
     showPraise('complete');
+  } else {
+    flashCard(id);
   }
   if (newStage !== 'delivered') {
     c.deliveredAt = null;
@@ -2151,6 +2222,7 @@ function returnToWaitlist(id) {
   c.slot = 'waitlist';
   c.stage = 'received';
   save('vf_commissions', commissions);
+  flashCard(id, 'gold');
   renderBoard();
 }
 
@@ -2242,7 +2314,7 @@ function renderMapActiveCard(c) {
   const prevLabel = prevStage ? STAGE_LABELS[prevStage] : null;
   const nextLabel = nextStage ? STAGE_LABELS[nextStage] : null;
 
-  return `<div class="comm-card active-card" onclick="openMapDetail('${c.id}')">
+  return `<div class="comm-card active-card ${flashClassFor(c.id)}" onclick="openMapDetail('${c.id}')">
     <div class="card-top">
       <div>
         <div class="card-client">${esc(c.clientName)} <span class="card-contact">(${esc(c.contactMethod)})</span></div>
@@ -2295,7 +2367,7 @@ function renderMapDeliveredCard(c) {
 function renderMapWaitlistCard(c, position) {
   const payClass = c.paymentStatus ? (PAY_CLASSES[c.paymentStatus] || '') : '';
   const payLabel = c.paymentStatus ? (PAY_LABELS[c.paymentStatus] || '') : '';
-  return `<div class="waitlist-card-collapsed" onclick="toggleWaitlistExpand('map-${c.id}', this)">
+  return `<div class="waitlist-card-collapsed ${flashClassFor(c.id)}" onclick="toggleWaitlistExpand('map-${c.id}', this)">
     <div class="wc-left" style="gap:8px;">
       <span style="font-family:'JetBrains Mono',monospace;font-size:0.7rem;color:var(--gold);opacity:0.7;flex-shrink:0;">#${position}</span>
       <div style="display:flex;flex-direction:column;gap:2px;flex:1;min-width:0;">
@@ -2337,6 +2409,7 @@ function setMapStage(id, newStage) {
   const prevStage = c.stage;
   c.stage = newStage;
   if (newStage === 'delivered' && prevStage !== 'delivered') { c.deliveredAt = Date.now(); showPraise('complete'); }
+  else { flashCard(id); }
   if (newStage !== 'delivered') c.deliveredAt = null;
   save('vf_maps', mapCommissions);
   renderMapBoard();
@@ -2360,6 +2433,7 @@ function returnMapToWaitlist(id) {
   c.slot = 'waitlist';
   c.stage = 'received';
   save('vf_maps', mapCommissions);
+  flashCard(id, 'gold');
   renderMapBoard();
 }
 
@@ -4922,6 +4996,7 @@ function saveCoachingEdit(id) {
   save('vf_coaching', coachingSessions);
   autoLogCoachingIncome(s);
   syncSessionToCalendar(s.id, 'coaching', s.clientName, s.date, s.time);
+  flashCard(id);
   closeModal();
   renderCoachingMini();
   renderCoachingFull();
@@ -4955,6 +5030,7 @@ function undoCoachingCompleted(id) {
   s.completed = false;
   s.completedAt = null;
   save('vf_coaching', coachingSessions);
+  flashCard(id, 'gold');
   renderCoachingFull();
 }
 
@@ -4994,7 +5070,7 @@ function renderCoachingCard(s) {
   const payLabel = s.paymentStatus ? (PAY_LABELS[s.paymentStatus]||'') : '';
   const payClass = s.paymentStatus ? (PAY_CLASSES[s.paymentStatus]||'') : '';
   const col = getCoachingColumn(s);
-  return `<div class="comm-card active-card" onclick="openEditCoaching('${s.id}')">
+  return `<div class="comm-card active-card ${flashClassFor(s.id)}" onclick="openEditCoaching('${s.id}')">
     <div class="card-top">
       <div class="card-client">${esc(s.clientName)} <span class="card-contact">(${esc(s.contactMethod)})</span></div>
     </div>
@@ -5268,6 +5344,7 @@ function createOneShotCard() {
   };
   oneShots.push(card);
   save('vf_oneshots', oneShots);
+  flashCard(card.id);
   renderOneShotFull();
   openCardDetail(card.id);
 }
@@ -5322,6 +5399,8 @@ function osCardDrop(e, cardId) {
   osDragInfo = null;
 }
 
+let flashAttachedId = null;
+
 function attachIndividualToCard(individualId, cardId) {
   const individual = oneShots.find(r => r.id === individualId);
   const card = oneShots.find(r => r.id === cardId);
@@ -5334,6 +5413,9 @@ function attachIndividualToCard(individualId, cardId) {
   individual.parentCardId = cardId;
   if (!card.attachedIds.includes(individualId)) card.attachedIds.push(individualId);
   save('vf_oneshots', oneShots);
+  flashAttachedId = individualId;
+  flashCard(cardId, 'gold');
+  setTimeout(() => { flashAttachedId = null; }, 50);
   renderOneShotFull();
 }
 
@@ -5345,6 +5427,19 @@ function unattachIndividual(individualId) {
   individual.parentCardId = null;
   save('vf_oneshots', oneShots);
   renderOneShotFull();
+}
+
+// Called from the little red × directly on a card's sub-card, right on the
+// board (no need to open the card at all). Plays a quick fade/slide before
+// the actual re-render so the removal reads as an action, not a jump-cut.
+function unattachChipAnimated(e, individualId) {
+  const chip = e.target.closest('.attached-subcard');
+  if (chip) {
+    chip.classList.add('chip-leaving');
+    setTimeout(() => unattachIndividual(individualId), 220);
+  } else {
+    unattachIndividual(individualId);
+  }
 }
 
 function openCardDetail(id) {
@@ -5461,6 +5556,7 @@ function saveCardEdit(id) {
   save('vf_oneshots', oneShots);
   autoLogOneShotIncome(r);
   syncSessionToCalendar(r.id, 'oneshot', r.clientName, r.sessionDate, r.sessionTime);
+  flashCard(id);
   closeModal();
   renderOneShotMini();
   renderOneShotFull();
@@ -5482,6 +5578,7 @@ function undoOneShotCompleted(id) {
   r.completed = false;
   r.completedAt = null;
   save('vf_oneshots', oneShots);
+  flashCard(id, 'gold');
   renderOneShotFull();
 }
 
@@ -5536,7 +5633,7 @@ function renderOneShotMini() {
 function renderIndividualCard(r) {
   const matches = findMatches(r.id);
   const hasMatch = matches.length > 0;
-  return `<div class="comm-card ${hasMatch ? 'match-highlight' : 'active-card'}" draggable="true"
+  return `<div class="comm-card ${hasMatch ? 'match-highlight' : 'active-card'} ${flashClassFor(r.id)}" draggable="true"
     ondragstart="osDragStart(event,'${r.id}')"
     onclick="openIndividualDetail('${r.id}')">
     <div class="card-top">
@@ -5560,7 +5657,7 @@ function renderOneShotCard(r) {
   const attached = (r.attachedIds||[]).map(pid => oneShots.find(p => p.id === pid)).filter(Boolean);
   const col = getOneShotColumn(r);
 
-  return `<div class="comm-card active-card"
+  return `<div class="comm-card active-card ${flashClassFor(r.id)}"
     ondragover="osCardDragOver(event)"
     ondragleave="osCardDragLeave(event)"
     ondrop="osCardDrop(event,'${r.id}')"
@@ -5579,12 +5676,19 @@ function renderOneShotCard(r) {
         <span>Prep</span><span>${r.prepPercent||0}%</span>
       </div>
       <div style="height:5px;background:var(--bg-card);border-radius:4px;overflow:hidden;">
-        <div style="height:100%;width:${r.prepPercent||0}%;background:var(--teal);"></div>
+        <div style="height:100%;width:${r.prepPercent||0}%;background:var(--teal);transition:width 0.4s ease;"></div>
       </div>
     </div>
     ${r.sessionDate ? `<div class="card-dates"><div class="card-date">When: <span>${r.sessionDate} ${r.sessionTime||''}</span></div></div>` : ''}
-    <div style="margin:6px 0;font-size:0.68rem;color:var(--text-dim);">
-      👥 ${attached.length === 0 ? 'No players attached yet' : attached.map(p=>esc(p.clientName)).join(', ')}
+    <div style="margin-top:6px;">
+      <div style="font-size:0.6rem;color:var(--text-ghost);text-transform:uppercase;letter-spacing:0.08em;">👥 Attached Players ${attached.length ? '('+attached.length+')' : ''}</div>
+      ${attached.length === 0
+        ? `<div style="font-size:0.68rem;color:var(--text-ghost);font-style:italic;margin-top:3px;">Drag someone from Need Matchmaking to attach them here</div>`
+        : attached.map(p => `
+          <div class="attached-subcard ${flashAttachedId===p.id?'chip-pop':''}" onclick="event.stopPropagation();openIndividualDetail('${p.id}')">
+            <span class="attached-subcard-name">${esc(p.clientName)}</span>
+            <span class="attached-subcard-x" onclick="event.stopPropagation();unattachChipAnimated(event, '${p.id}')" title="Unattach">✕</span>
+          </div>`).join('')}
     </div>
     <div style="display:flex;gap:5px;margin-top:8px;flex-wrap:wrap;">
       ${col === 'completed'
