@@ -1306,7 +1306,7 @@
     </div>
     <div style="display:flex;gap:6px;align-items:center;">
       <span id="sync-status" style="font-size:0.65rem;color:var(--text-ghost);"></span>
-      <button class="btn btn-sm" id="sync-btn" onclick="syncFromSheet()">⟳ Sync Form Submissions</button>
+      <button class="btn btn-sm" id="sync-btn" onclick="syncAllFromSheet()">⟳ Sync All Forms</button>
       <button class="btn btn-sm" onclick="openPraiseManager()">⚙ Praise Bank</button>
     </div>
   </header>
@@ -1316,6 +1316,7 @@
     <button class="tab-btn active" onclick="switchPage('dashboard', this)">Dashboard</button>
     <button class="tab-btn" onclick="switchPage('coaching', this)">Coaching</button>
     <button class="tab-btn" onclick="switchPage('matchmaking', this)">Matchmaking</button>
+    <button class="tab-btn" onclick="switchPage('maps', this)">Maps</button>
     <button class="tab-btn" onclick="switchPage('income', this)">Income</button>
     <button class="tab-btn" onclick="switchPage('content', this)">Content</button>
     <button class="tab-btn" onclick="switchPage('patreon', this)">Patreon</button>
@@ -1420,21 +1421,35 @@
     <!-- SERVICES AT A GLANCE (new far-right col) -->
     <div class="panel">
       <div class="panel-header">
-        <span class="panel-title">🎲 Coaching & One-Shots</span>
-        <button class="btn-icon" onclick="switchPageByName('coaching')" title="Full Coaching View">↗</button>
+        <span class="panel-title">🎲 Services At A Glance</span>
       </div>
       <div class="panel-body">
         <div style="font-size:0.62rem;color:var(--text-ghost);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;">
           <span>Upcoming Coaching</span>
-          <button class="btn-icon" onclick="openNewCoaching()" title="New Coaching Session">+</button>
+          <span style="display:flex;gap:4px;">
+            <button class="btn-icon" onclick="openNewCoaching()" title="New Coaching Session">+</button>
+            <button class="btn-icon" onclick="switchPageByName('coaching')" title="Full Coaching View">↗</button>
+          </span>
         </div>
         <div class="mini-panel-list" id="mini-coaching-list" style="margin-bottom:14px;"></div>
 
         <div style="font-size:0.62rem;color:var(--text-ghost);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;">
           <span>One-Shot Queue</span>
-          <button class="btn-icon" onclick="openNewOneShot()" title="New One-Shot Request">+</button>
+          <span style="display:flex;gap:4px;">
+            <button class="btn-icon" onclick="openNewOneShot()" title="New One-Shot Request">+</button>
+            <button class="btn-icon" onclick="switchPageByName('matchmaking')" title="Full Matchmaking View">↗</button>
+          </span>
         </div>
-        <div class="mini-panel-list" id="mini-oneshot-list"></div>
+        <div class="mini-panel-list" id="mini-oneshot-list" style="margin-bottom:14px;"></div>
+
+        <div style="font-size:0.62rem;color:var(--text-ghost);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;">
+          <span>Map Queue</span>
+          <span style="display:flex;gap:4px;">
+            <button class="btn-icon" onclick="openNewMap()" title="New Map Commission">+</button>
+            <button class="btn-icon" onclick="switchPageByName('maps')" title="Full Map Board View">↗</button>
+          </span>
+        </div>
+        <div class="mini-panel-list" id="mini-map-list"></div>
       </div>
     </div>
   </div>
@@ -1525,11 +1540,42 @@
     <div class="panel" style="min-height:75vh;">
       <div class="panel-header">
         <span class="panel-title">⚔ One-Shot Matchmaking</span>
-        <span id="oneshot-sync-status" style="font-size:0.65rem;color:var(--text-ghost);"></span>
-        <button class="btn btn-sm" id="oneshot-sync-btn" onclick="syncOneShotsFromSheet()">⟳ Sync Form Submissions</button>
         <button class="btn btn-teal btn-sm" onclick="openNewOneShot()">+ New One-Shot Request</button>
       </div>
       <div class="panel-body" id="oneshot-full-list" style="display:grid;grid-template-columns:repeat(auto-fill, minmax(320px, 1fr));gap:10px;align-content:start;">
+      </div>
+    </div>
+  </div>
+
+  <!-- MAPS PAGE -->
+  <div class="page-view" id="page-maps">
+    <div class="panel commission-board" style="min-height:75vh;">
+      <div class="board-header">
+        <span class="panel-title">🗺️ Map Commission Board</span>
+        <button class="btn btn-teal btn-sm" onclick="openNewMap()">+ New Map Commission</button>
+      </div>
+      <div class="board-3col">
+        <div class="board-col">
+          <div class="board-col-header">
+            <span class="board-col-title gold">Waitlist</span>
+            <span id="col-map-wait-count" style="font-size:0.62rem;color:var(--text-ghost);">0</span>
+          </div>
+          <div class="board-col-body" id="col-map-waitlist"></div>
+        </div>
+        <div class="board-col">
+          <div class="board-col-header">
+            <span class="board-col-title teal">Active</span>
+            <span id="col-map-active-count" style="font-size:0.62rem;color:var(--text-ghost);">0/3</span>
+          </div>
+          <div class="board-col-body" id="col-map-active"></div>
+        </div>
+        <div class="board-col">
+          <div class="board-col-header">
+            <span class="board-col-title green">Delivered</span>
+            <span id="col-map-delivered-count" style="font-size:0.62rem;color:var(--text-ghost);">0</span>
+          </div>
+          <div class="board-col-body" id="col-map-delivered"></div>
+        </div>
       </div>
     </div>
   </div>
@@ -1741,6 +1787,7 @@ function save(key, val) {
 }
 
 let commissions = load('vf_commissions', []);
+let mapCommissions = load('vf_maps', []);
 let reminders = load('vf_reminders', []);
 let todos = load('vf_todos', []);
 let expenses = load('vf_expenses', []);
@@ -1929,6 +1976,7 @@ function renderActiveCard(c) {
       ${c.dateDue ? `<div class="card-date">Due: <span style="color:${isDueSoon(c.dateDue)?'#e05555':'inherit'}">${c.dateDue}</span></div>` : ''}
     </div>
     ${c.preTasks ? `<div class="card-tasks"><div class="card-tasks-label">Pre-Start Tasks</div><div class="card-tasks-text">${esc(c.preTasks)}</div></div>` : ''}
+    ${c.linkedId ? `<div style="font-size:0.68rem;color:var(--gold);margin-top:4px;">🔗 Linked: ${esc(findLinkedLabel(c.linkedId)||'')}</div>` : ''}
     <div style="display:flex;gap:5px;margin-top:8px;flex-wrap:wrap;">
       ${prevLabel ? `<button class="btn btn-sm" style="flex:1;" onclick="event.stopPropagation();setStage('${c.id}','${prevStage}')">← ${prevLabel}</button>` : '<div style="flex:1;"></div>'}
       ${nextLabel ? `<button class="btn btn-teal btn-sm" style="flex:1;" onclick="event.stopPropagation();setStage('${c.id}','${nextStage}')">${nextLabel} →</button>` : ''}
@@ -2056,6 +2104,447 @@ function deleteCommission(id) {
 function toggleTipField(rowId, value) {
   const row = document.getElementById(rowId);
   if (row) row.style.display = value === 'tip' ? 'block' : 'none';
+}
+
+// ═══════════════════════════════════════════════
+// MAP COMMISSION BOARD — separate 3-slot board,
+// mirrors the Music commission board above.
+// ═══════════════════════════════════════════════
+
+function renderMapBoard() {
+  const now = Date.now();
+  mapCommissions.forEach(c => {
+    if (c.slot === 'active' && c.stage === 'delivered' && c.deliveredAt) {
+      if (now - c.deliveredAt > 14 * 24 * 60 * 60 * 1000) c.slot = 'archive';
+    }
+  });
+  save('vf_maps', mapCommissions);
+
+  const waitlist  = mapCommissions.filter(c => c.slot === 'waitlist');
+  const active    = mapCommissions.filter(c => c.slot === 'active' && c.stage !== 'delivered');
+  const delivered = mapCommissions.filter(c => c.slot === 'active' && c.stage === 'delivered');
+
+  const colWait = document.getElementById('col-map-waitlist');
+  document.getElementById('col-map-wait-count').textContent = waitlist.length;
+  colWait.innerHTML = waitlist.length === 0
+    ? '<div class="empty-state">Queue is clear.</div>'
+    : waitlist.map((c, i) => renderMapWaitlistCard(c, i + 1)).join('');
+
+  const colActive = document.getElementById('col-map-active');
+  document.getElementById('col-map-active-count').textContent = active.length + '/3';
+  let activeHtml = active.map(c => renderMapActiveCard(c)).join('');
+  for (let i = active.length; i < 3; i++) {
+    activeHtml += `<div class="empty-slot" onclick="openNewMap()">
+      <div class="empty-slot-icon">＋</div>
+      <div>Empty Slot</div>
+    </div>`;
+  }
+  colActive.innerHTML = activeHtml;
+
+  const colDelivered = document.getElementById('col-map-delivered');
+  document.getElementById('col-map-delivered-count').textContent = delivered.length;
+  colDelivered.innerHTML = delivered.length === 0
+    ? '<div class="empty-state">Nothing delivered yet.</div>'
+    : delivered.map(c => renderMapDeliveredCard(c)).join('');
+
+  renderMapMini();
+}
+
+function comboFlagHtml(c) {
+  const linked = c.linkedId ? findLinkedLabel(c.linkedId) : null;
+  const parts = [];
+  if (c.formData && (c.formData.comboRequested === true || c.formData.comboRequested === 'true' || c.formData.comboRequested === 'TRUE')) {
+    parts.push(linked
+      ? `<div style="font-size:0.68rem;color:var(--gold);margin-top:4px;">🔗 Linked: ${esc(linked)}</div>`
+      : `<div style="font-size:0.68rem;color:var(--gold-dim);margin-top:4px;">⚡ Combo requested — not yet linked</div>`);
+  } else if (linked) {
+    parts.push(`<div style="font-size:0.68rem;color:var(--gold);margin-top:4px;">🔗 Linked: ${esc(linked)}</div>`);
+  }
+  if (c.formData && (c.formData.worldbuildingConsult === true || c.formData.worldbuildingConsult === 'true' || c.formData.worldbuildingConsult === 'TRUE')) {
+    parts.push(`<div style="font-size:0.68rem;color:var(--teal-dim);margin-top:2px;">🗣 Worldbuilding Consult requested</div>`);
+  }
+  return parts.join('');
+}
+
+// Looks up a display label for a linked record on the opposite board
+function findLinkedLabel(id) {
+  const m = commissions.find(x => x.id === id) || mapCommissions.find(x => x.id === id);
+  if (!m) return null;
+  return `${m.clientName} (${m.songTitle || m.mapTitle || m.type || m.mapType || 'commission'})`;
+}
+
+function renderMapActiveCard(c) {
+  const stages = ['received', 'in-progress', 'revision', 'delivered'];
+  const stageClass = STAGE_CLASSES[c.stage] || 'stage-received';
+  const stageLabel = STAGE_LABELS[c.stage] || c.stage;
+  const payClass = c.paymentStatus ? (PAY_CLASSES[c.paymentStatus] || '') : '';
+  const payLabel = c.paymentStatus ? (PAY_LABELS[c.paymentStatus] || c.paymentStatus) : '';
+  const idx = stages.indexOf(c.stage);
+  const prevStage = idx > 0 ? stages[idx - 1] : null;
+  const nextStage = idx < stages.length - 1 ? stages[idx + 1] : null;
+  const prevLabel = prevStage ? STAGE_LABELS[prevStage] : null;
+  const nextLabel = nextStage ? STAGE_LABELS[nextStage] : null;
+
+  return `<div class="comm-card active-card" onclick="openMapDetail('${c.id}')">
+    <div class="card-top">
+      <div>
+        <div class="card-client">${esc(c.clientName)} <span class="card-contact">(${esc(c.contactMethod)})</span></div>
+        ${c.mapTitle ? `<div style="font-size:0.7rem;color:var(--teal-dim);font-style:italic;margin-top:1px;">"${esc(c.mapTitle)}"</div>` : ''}
+      </div>
+      <span class="card-stage ${stageClass}">${stageLabel}</span>
+    </div>
+    <div class="card-row">
+      <span class="card-tag">${esc(c.mapType || 'Map')}</span>
+      <span class="card-price">${formatMoney(c.price)}${c.tipAmount ? ` <span style="font-size:0.6rem;color:var(--gold-dim);">(+$${c.tipAmount} tip)</span>` : ''}</span>
+      ${payLabel ? `<span class="payment-badge ${payClass}">${payLabel}</span>` : ''}
+    </div>
+    <div class="card-dates">
+      <div class="card-date">Received: <span>${c.dateReceived || '—'}</span></div>
+      ${c.dateDue ? `<div class="card-date">Due: <span style="color:${isDueSoon(c.dateDue)?'#e05555':'inherit'}">${c.dateDue}</span></div>` : ''}
+    </div>
+    ${c.preTasks ? `<div class="card-tasks"><div class="card-tasks-label">Pre-Start Tasks</div><div class="card-tasks-text">${esc(c.preTasks)}</div></div>` : ''}
+    ${comboFlagHtml(c)}
+    <div style="display:flex;gap:5px;margin-top:8px;flex-wrap:wrap;">
+      ${prevLabel ? `<button class="btn btn-sm" style="flex:1;" onclick="event.stopPropagation();setMapStage('${c.id}','${prevStage}')">← ${prevLabel}</button>` : '<div style="flex:1;"></div>'}
+      ${nextLabel ? `<button class="btn btn-teal btn-sm" style="flex:1;" onclick="event.stopPropagation();setMapStage('${c.id}','${nextStage}')">${nextLabel} →</button>` : ''}
+      <button class="btn btn-sm" onclick="event.stopPropagation();openMapDetail('${c.id}')" title="Edit">✎</button>
+      <button class="btn btn-sm" style="color:var(--danger);" onclick="event.stopPropagation();deleteMapCommission('${c.id}')">✕</button>
+    </div>
+    <button class="btn btn-sm" style="width:100%;margin-top:5px;color:var(--gold-dim);" onclick="event.stopPropagation();returnMapToWaitlist('${c.id}')">↩ Return to Waitlist</button>
+  </div>`;
+}
+
+function renderMapDeliveredCard(c) {
+  const payClass = c.paymentStatus ? (PAY_CLASSES[c.paymentStatus] || '') : '';
+  const payLabel = c.paymentStatus ? (PAY_LABELS[c.paymentStatus] || c.paymentStatus) : '';
+  return `<div class="comm-card" style="border-left:3px solid var(--success);">
+    <div class="card-top">
+      <div class="card-client">${esc(c.clientName)} <span class="card-contact">(${esc(c.contactMethod)})</span></div>
+      <span class="card-stage stage-delivered">Delivered</span>
+    </div>
+    <div class="card-row">
+      <span class="card-tag">${esc(c.mapType || 'Map')}</span>
+      <span class="card-price">${formatMoney(c.price)}${c.tipAmount ? ` <span style="font-size:0.6rem;color:var(--gold-dim);">(+$${c.tipAmount} tip)</span>` : ''}</span>
+      ${payLabel ? `<span class="payment-badge ${payClass}">${payLabel}</span>` : ''}
+    </div>
+    ${c.deliveredAt ? `<div class="card-date" style="margin-top:4px;">Delivered: <span>${new Date(c.deliveredAt).toLocaleDateString()}</span></div>` : ''}
+    <div style="display:flex;gap:5px;margin-top:8px;">
+      <button class="btn btn-sm" style="flex:1;" onclick="setMapStage('${c.id}','revision')">← Back to Revision</button>
+      <button class="btn btn-sm" style="color:var(--danger);" onclick="deleteMapCommission('${c.id}')">✕</button>
+    </div>
+  </div>`;
+}
+
+function renderMapWaitlistCard(c, position) {
+  const payClass = c.paymentStatus ? (PAY_CLASSES[c.paymentStatus] || '') : '';
+  const payLabel = c.paymentStatus ? (PAY_LABELS[c.paymentStatus] || '') : '';
+  return `<div class="waitlist-card-collapsed" onclick="toggleWaitlistExpand('map-${c.id}', this)">
+    <div class="wc-left" style="gap:8px;">
+      <span style="font-family:'JetBrains Mono',monospace;font-size:0.7rem;color:var(--gold);opacity:0.7;flex-shrink:0;">#${position}</span>
+      <div style="display:flex;flex-direction:column;gap:2px;flex:1;min-width:0;">
+        <div style="display:flex;align-items:center;gap:7px;flex-wrap:wrap;">
+          <span class="wc-name">${esc(c.clientName)}</span>
+          <span class="wc-tag" style="font-size:0.6rem;color:var(--text-ghost);">(${esc(c.contactMethod)})</span>
+          ${c.mapTitle ? `<span style="font-size:0.66rem;color:var(--teal-dim);font-style:italic;">"${esc(c.mapTitle)}"</span>` : ''}
+        </div>
+        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+          <span class="card-tag" style="font-size:0.6rem;">${esc(c.mapType || 'Map')}</span>
+          <span class="card-price" style="font-size:0.75rem;">${formatMoney(c.price)}</span>
+          ${payLabel ? `<span class="payment-badge ${payClass}" style="font-size:0.58rem;">${payLabel}</span>` : ''}
+        </div>
+      </div>
+    </div>
+    <div style="display:flex;gap:5px;align-items:center;flex-shrink:0;">
+      <button class="btn btn-sm" onclick="event.stopPropagation();openMapDetail('${c.id}')">✎</button>
+      <button class="btn btn-teal btn-sm" onclick="event.stopPropagation();moveMapToActive('${c.id}')">→ Active</button>
+      <button class="btn btn-sm" style="color:var(--danger);" onclick="event.stopPropagation();deleteMapCommission('${c.id}')">✕</button>
+      <span class="wc-expand" id="wl-chevron-map-${c.id}">▼</span>
+    </div>
+  </div>
+  <div id="wl-expand-map-${c.id}" style="display:none;">
+    <div class="comm-card waitlist-card" style="border-radius:0 0 6px 6px;border-top:none;margin-top:-2px;">
+      <div class="card-dates" style="margin-bottom:5px;">
+        <div class="card-date">Received: <span>${c.dateReceived||'—'}</span></div>
+        ${c.dateDue ? `<div class="card-date">Due: <span>${c.dateDue}</span></div>` : ''}
+      </div>
+      ${c.preTasks ? `<div class="card-tasks"><div class="card-tasks-label">Pre-Start Tasks</div><div class="card-tasks-text">${esc(c.preTasks)}</div></div>` : ''}
+      ${comboFlagHtml(c)}
+      ${c.notes ? `<div class="card-tasks" style="margin-top:5px;"><div class="card-tasks-label" style="color:var(--text-dim);">Notes</div><div style="font-size:0.72rem;color:var(--text);">${esc(c.notes)}</div></div>` : ''}
+    </div>
+  </div>`;
+}
+
+function setMapStage(id, newStage) {
+  const c = mapCommissions.find(x => x.id === id);
+  if (!c) return;
+  const prevStage = c.stage;
+  c.stage = newStage;
+  if (newStage === 'delivered' && prevStage !== 'delivered') { c.deliveredAt = Date.now(); showPraise('complete'); }
+  if (newStage !== 'delivered') c.deliveredAt = null;
+  save('vf_maps', mapCommissions);
+  renderMapBoard();
+}
+
+function moveMapToActive(id) {
+  const active = mapCommissions.filter(c => c.slot === 'active' && c.stage !== 'delivered');
+  if (active.length >= 3) { alert("All 3 active map slots are full. Complete one first!"); return; }
+  const c = mapCommissions.find(x => x.id === id);
+  if (!c) return;
+  c.slot = 'active';
+  c.stage = 'received';
+  save('vf_maps', mapCommissions);
+  showPraise('waitlistMove');
+  renderMapBoard();
+}
+
+function returnMapToWaitlist(id) {
+  const c = mapCommissions.find(x => x.id === id);
+  if (!c) return;
+  c.slot = 'waitlist';
+  c.stage = 'received';
+  save('vf_maps', mapCommissions);
+  renderMapBoard();
+}
+
+function deleteMapCommission(id) {
+  mapCommissions = mapCommissions.filter(c => c.id !== id);
+  save('vf_maps', mapCommissions);
+  renderMapBoard();
+}
+
+function renderMapMini() {
+  const el = document.getElementById('mini-map-list');
+  if (!el) return;
+  const upcoming = mapCommissions.filter(c => c.slot !== 'archive' && c.stage !== 'delivered').slice(0, 5);
+  if (upcoming.length === 0) {
+    el.innerHTML = '<div class="empty-state" style="padding:8px 0;font-size:0.7rem;">Queue is clear.</div>';
+    return;
+  }
+  el.innerHTML = upcoming.map(c => `
+    <div class="mini-card" onclick="switchPageByName('maps')">
+      <div class="mini-card-top">
+        <span class="mini-card-name">${esc(c.clientName)}</span>
+        <span class="mini-card-sub">${esc(c.mapType || 'Map')}</span>
+      </div>
+      <div class="mini-card-sub">${esc((c.mapTitle||c.context||'').slice(0,50))}${(c.mapTitle||c.context||'').length>50?'...':''}</div>
+      <div class="status-dots">
+        <span class="status-dot ${c.slot==='active'?'on':''}">${c.slot==='active'?'Active':'Waitlist'}</span>
+      </div>
+    </div>`).join('');
+}
+
+function openNewMap() {
+  showModal(`
+    <div class="modal modal-large">
+      <div class="modal-title">New Map Commission</div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Client Name</label>
+          <input class="form-input" id="map-name" placeholder="Who's this for?">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Contact Method</label>
+          <input class="form-input" id="map-contact" placeholder="Discord / Email">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Map Type</label>
+          <select class="form-select" id="map-type">
+            <option>Battle Map</option>
+            <option>Interior / Building Layout</option>
+            <option>Dungeon Map</option>
+            <option>City Map</option>
+            <option>Region / Area Map</option>
+            <option>World Map</option>
+            <option>Not Sure</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Map Title / Location Name</label>
+          <input class="form-input" id="map-title" placeholder="Optional">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Price ($)</label>
+          <input class="form-input" id="map-price" type="number" placeholder="0.00">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Deadline</label>
+          <input class="form-input" id="map-due" type="date">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">What's this map for / vision?</label>
+        <textarea class="form-textarea" id="map-context"></textarea>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Notes</label>
+        <textarea class="form-textarea" id="map-notes" placeholder="Anything else..."></textarea>
+      </div>
+      <div class="modal-actions">
+        <button class="btn" onclick="closeModal()">Cancel</button>
+        <button class="btn btn-teal" onclick="saveNewMap()">Add Commission</button>
+      </div>
+    </div>`);
+}
+
+function saveNewMap() {
+  const name = document.getElementById('map-name').value.trim();
+  if (!name) return alert('Client name required.');
+  const c = {
+    id: 'map_' + Date.now(),
+    slot: 'waitlist',
+    clientName: name,
+    contactMethod: document.getElementById('map-contact').value.trim() || 'Discord',
+    mapType: document.getElementById('map-type').value,
+    mapTitle: document.getElementById('map-title').value.trim(),
+    price: parseFloat(document.getElementById('map-price').value) || 0,
+    tipAmount: 0,
+    paymentStatus: '',
+    dateReceived: new Date().toLocaleDateString(),
+    dateDue: document.getElementById('map-due').value,
+    context: document.getElementById('map-context').value.trim(),
+    notes: document.getElementById('map-notes').value.trim(),
+    preTasks: '',
+    formData: {},
+    stage: 'received',
+    deliveredAt: null,
+    fromForm: false,
+    linkedId: null,
+  };
+  mapCommissions.push(c);
+  save('vf_maps', mapCommissions);
+  closeModal();
+  renderMapBoard();
+}
+
+function linkedCommissionOptionsHtml(currentLinkedId, excludeId) {
+  const musicOpts = commissions.filter(m => m.id !== excludeId).map(m =>
+    `<option value="${m.id}" ${currentLinkedId===m.id?'selected':''}>🎵 ${esc(m.clientName)} — ${esc(m.songTitle||m.type||'')}</option>`).join('');
+  const mapOpts = mapCommissions.filter(m => m.id !== excludeId).map(m =>
+    `<option value="${m.id}" ${currentLinkedId===m.id?'selected':''}>🗺️ ${esc(m.clientName)} — ${esc(m.mapTitle||m.mapType||'')}</option>`).join('');
+  return `<option value="">— None —</option>${musicOpts}${mapOpts}`;
+}
+
+function openMapDetail(id) {
+  const c = mapCommissions.find(x => x.id === id);
+  if (!c) return;
+  showModal(`
+    <div class="modal modal-large">
+      <div class="modal-title">Map Commission — ${esc(c.clientName)}</div>
+      <div class="modal-2col">
+        <div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Client Name</label>
+              <input class="form-input" id="map-name" value="${esc(c.clientName)}">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Contact Method</label>
+              <input class="form-input" id="map-contact" value="${esc(c.contactMethod)}">
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Map Type</label>
+              <input class="form-input" id="map-type" value="${esc(c.mapType||'')}">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Map Title</label>
+              <input class="form-input" id="map-title" value="${esc(c.mapTitle||'')}">
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Price ($)</label>
+              <input class="form-input" id="map-price" type="number" value="${c.price||0}">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Payment Status</label>
+              <select class="form-select" id="map-pay">
+                <option value="" ${!c.paymentStatus?'selected':''}>— Not Yet —</option>
+                <option value="partial" ${c.paymentStatus==='partial'?'selected':''}>Partial</option>
+                <option value="full" ${c.paymentStatus==='full'?'selected':''}>Paid in Full</option>
+                <option value="tip" ${c.paymentStatus==='tip'?'selected':''}>Tip Added</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Deadline</label>
+            <input class="form-input" id="map-due" type="date" value="${c.dateDue||''}">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Vision / Context</label>
+            <textarea class="form-textarea" id="map-context">${esc(c.context||'')}</textarea>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Pre-Start Tasks</label>
+            <input class="form-input" id="map-pretasks" value="${esc(c.preTasks||'')}">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Notes</label>
+            <textarea class="form-textarea" id="map-notes">${esc(c.notes||'')}</textarea>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Linked Commission (combo)</label>
+            <select class="form-select" id="map-linked">
+              ${linkedCommissionOptionsHtml(c.linkedId, c.id)}
+            </select>
+          </div>
+        </div>
+        <div class="modal-2col-divider">
+          ${c.fromForm ? renderFormResponsesReadoutGeneric(c.formData) : '<div class="empty-state">Manually entered — no form data on file.</div>'}
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn" style="color:var(--danger);border-color:var(--danger);" onclick="deleteMapCommission('${c.id}');closeModal()">Delete</button>
+        <button class="btn" onclick="closeModal()">Cancel</button>
+        <button class="btn btn-teal" onclick="saveMapEdit('${c.id}')">Save</button>
+      </div>
+    </div>`);
+}
+
+function saveMapEdit(id) {
+  const c = mapCommissions.find(x => x.id === id);
+  if (!c) return;
+  c.clientName = document.getElementById('map-name').value.trim() || c.clientName;
+  c.contactMethod = document.getElementById('map-contact').value.trim();
+  c.mapType = document.getElementById('map-type').value.trim();
+  c.mapTitle = document.getElementById('map-title').value.trim();
+  c.price = parseFloat(document.getElementById('map-price').value) || 0;
+  c.paymentStatus = document.getElementById('map-pay').value;
+  c.dateDue = document.getElementById('map-due').value;
+  c.context = document.getElementById('map-context').value.trim();
+  c.preTasks = document.getElementById('map-pretasks').value.trim();
+  c.notes = document.getElementById('map-notes').value.trim();
+
+  const newLinkedId = document.getElementById('map-linked').value || null;
+  c.linkedId = newLinkedId;
+  // Keep the link bidirectional -- if the other record doesn't point back, fix that
+  if (newLinkedId) {
+    const other = commissions.find(x => x.id === newLinkedId) || mapCommissions.find(x => x.id === newLinkedId);
+    if (other) other.linkedId = c.id;
+  }
+
+  save('vf_maps', mapCommissions);
+  save('vf_commissions', commissions);
+  closeModal();
+  renderMapBoard();
+  renderBoard();
+}
+
+// Generic read-only form-data readout, reused for Map (and shareable for Coaching later)
+function renderFormResponsesReadoutGeneric(formData) {
+  if (!formData || Object.keys(formData).length === 0) {
+    return '<div class="empty-state">No form data on file.</div>';
+  }
+  return Object.entries(formData).filter(([k,v]) => v && k !== 'comboRequested' && k !== 'worldbuildingConsult').map(([k,v]) => `
+    <div style="margin-bottom:8px;">
+      <div style="font-size:0.62rem;color:var(--teal-dim);text-transform:uppercase;letter-spacing:0.08em;">${esc(k)}</div>
+      <div style="font-size:0.74rem;color:var(--text);">${esc(String(v))}</div>
+    </div>`).join('');
 }
 
 function openNewCommission() {
@@ -2277,6 +2766,12 @@ function openCommissionDetail(id) {
             <label class="form-label">Notes</label>
             <textarea class="form-textarea" id="ed-notes" style="min-height:90px;">${esc(c.notes||'')}</textarea>
           </div>
+          <div class="form-group">
+            <label class="form-label">Linked Commission (combo)</label>
+            <select class="form-select" id="ed-linked">
+              ${linkedCommissionOptionsHtml(c.linkedId, c.id)}
+            </select>
+          </div>
         </div>
 
         <div class="modal-2col-divider">
@@ -2463,10 +2958,20 @@ function saveCommissionEdit(id) {
     c.deliveredAt = Date.now();
     showPraise('complete');
   }
+
+  const newLinkedId = document.getElementById('ed-linked')?.value || null;
+  c.linkedId = newLinkedId;
+  if (newLinkedId) {
+    const other = commissions.find(x => x.id === newLinkedId) || mapCommissions.find(x => x.id === newLinkedId);
+    if (other) other.linkedId = c.id;
+  }
+
   save('vf_commissions', commissions);
+  save('vf_maps', mapCommissions);
   autoLogIncome(c, prevPayStatus);
   closeModal();
   renderBoard();
+  renderMapBoard();
 }
 
 // ═══════════════════════════════════════════════
@@ -3169,11 +3674,6 @@ function addSyncedId(id) {
 }
 
 async function syncFromSheet() {
-  const syncBtn = document.getElementById('sync-btn');
-  const syncStatus = document.getElementById('sync-status');
-  if (syncBtn) syncBtn.textContent = '⟳ Syncing...';
-  if (syncStatus) syncStatus.textContent = '';
-
   try {
     const res = await fetch(APPS_SCRIPT_URL + '?action=getCommissions', { method: 'GET', redirect: 'follow' });
     if (!res.ok) throw new Error('Network error: ' + res.status);
@@ -3234,28 +3734,12 @@ async function syncFromSheet() {
     if (newCount > 0) {
       save('vf_commissions', commissions);
       renderBoard();
-      if (syncStatus) {
-        syncStatus.textContent = `✓ ${newCount} new submission${newCount > 1 ? 's' : ''} added to waitlist`;
-        syncStatus.style.color = 'var(--success)';
-      }
-      if (newCount > 0) showPraise('waitlistMove');
-    } else {
-      if (syncStatus) {
-        syncStatus.textContent = '✓ All up to date';
-        syncStatus.style.color = 'var(--text-ghost)';
-      }
     }
+    return newCount;
   } catch (err) {
-    console.error('Sync error:', err);
-    if (syncStatus) {
-      syncStatus.textContent = '✗ Sync failed — check console';
-      syncStatus.style.color = 'var(--danger)';
-    }
+    console.error('Music sync error:', err);
+    return -1;
   }
-
-  if (syncBtn) syncBtn.textContent = '⟳ Sync Form Submissions';
-  // Clear status after 4 seconds
-  setTimeout(() => { if (syncStatus) syncStatus.textContent = ''; }, 4000);
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -3296,11 +3780,6 @@ function mapPartyStatus(groupStatusStr) {
 }
 
 async function syncOneShotsFromSheet() {
-  const syncBtn = document.getElementById('oneshot-sync-btn');
-  const syncStatus = document.getElementById('oneshot-sync-status');
-  if (syncBtn) syncBtn.textContent = '⟳ Syncing...';
-  if (syncStatus) syncStatus.textContent = '';
-
   try {
     const res = await fetch(APPS_SCRIPT_URL + '?action=getOneShots', { method: 'GET', redirect: 'follow' });
     if (!res.ok) throw new Error('Network error: ' + res.status);
@@ -3365,26 +3844,237 @@ async function syncOneShotsFromSheet() {
       save('vf_oneshots', oneShots);
       renderOneShotMini();
       renderOneShotFull();
-      if (syncStatus) {
-        syncStatus.textContent = `✓ ${newCount} new booking${newCount > 1 ? 's' : ''} added`;
-        syncStatus.style.color = 'var(--success)';
-      }
-    } else {
-      if (syncStatus) {
-        syncStatus.textContent = '✓ All up to date';
-        syncStatus.style.color = 'var(--text-ghost)';
-      }
     }
+    return newCount;
   } catch (err) {
     console.error('One-shot sync error:', err);
-    if (syncStatus) {
-      syncStatus.textContent = '✗ Sync failed -- check console';
+    return -1;
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// MAP COMMISSION SYNC — mirrors syncFromSheet(), pulls MapQueue
+// ═══════════════════════════════════════════════════════════════
+
+function getSyncedMapIds() {
+  try { return JSON.parse(localStorage.getItem('vf_synced_map_ids') || '[]'); } catch { return []; }
+}
+function addSyncedMapId(id) {
+  const ids = getSyncedMapIds();
+  if (!ids.includes(id)) { ids.push(id); localStorage.setItem('vf_synced_map_ids', JSON.stringify(ids)); }
+}
+
+function buildMapPreTasks(addonsStr) {
+  if (!addonsStr || addonsStr.includes('None of the above')) return '';
+  const tasks = [];
+  if (addonsStr.includes('Worldbuilding Consultation')) tasks.push('Schedule 30min worldbuilding consult before starting');
+  if (addonsStr.includes('Rush Delivery')) tasks.push('⚡ RUSH ORDER — prioritize');
+  if (addonsStr.includes('Additional Asset Pack')) tasks.push('Source additional asset pack');
+  if (addonsStr.includes('Animated Map, Atmospheric')) tasks.push('Animated (atmospheric) — plan loop effects');
+  if (addonsStr.includes('Animated Map, Complex')) tasks.push('Animated (complex) — quote case by case');
+  if (addonsStr.includes('Music + Map Combo')) tasks.push('⚡ Music commission also ordered — link it and apply -$5 combo discount');
+  return tasks.join(' | ');
+}
+
+async function syncMapsFromSheet(silent) {
+  try {
+    const res = await fetch(APPS_SCRIPT_URL + '?action=getMaps', { method: 'GET', redirect: 'follow' });
+    if (!res.ok) throw new Error('Network error: ' + res.status);
+    const data = await res.json();
+    if (!Array.isArray(data)) throw new Error('Unexpected response format');
+
+    const syncedIds = getSyncedMapIds();
+    let newCount = 0;
+
+    data.forEach(row => {
+      const id = row.ID;
+      if (!id || syncedIds.includes(id)) return;
+
+      const addons = row.Addons || '';
+      const comboRequested = row.ComboRequested === true || row.ComboRequested === 'true' || row.ComboRequested === 'TRUE' || addons.includes('Music + Map Combo');
+      const worldbuildingConsult = row.WorldbuildingConsult === true || row.WorldbuildingConsult === 'true' || row.WorldbuildingConsult === 'TRUE' || addons.includes('Worldbuilding Consultation');
+
+      const c = {
+        id: id,
+        slot: 'waitlist',
+        clientName: row.ClientName || 'Unknown',
+        contactMethod: row.ContactMethod || '',
+        mapType: row.MapType || '',
+        mapTitle: row.MapTitle || '',
+        price: 0,
+        tipAmount: 0,
+        paymentStatus: '',
+        dateReceived: row.Timestamp ? new Date(row.Timestamp).toLocaleDateString() : new Date().toLocaleDateString(),
+        dateDue: row.Deadline || '',
+        context: row.Context || '',
+        preTasks: buildMapPreTasks(addons),
+        notes: '', // Vorpal's own -- never pre-filled
+        formData: {
+          streamPermissions: row.StreamPermissions || '',
+          vibeTags: row.VibeTags || '',
+          landmarks: row.Landmarks || '',
+          artStyle: row.ArtStyle || '',
+          vttUse: row.VTTUse || '',
+          addons: addons,
+          howHeard: row.HowHeard || '',
+          otherNotes: row.OtherNotes || '',
+          email: row.Email || '',
+          comboRequested: comboRequested,
+          worldbuildingConsult: worldbuildingConsult,
+        },
+        stage: 'received',
+        deliveredAt: null,
+        fromForm: true,
+        sheetId: id,
+        linkedId: null,
+      };
+
+      mapCommissions.push(c);
+      addSyncedMapId(id);
+      newCount++;
+    });
+
+    if (newCount > 0) {
+      save('vf_maps', mapCommissions);
+      renderMapBoard();
+    }
+    return newCount;
+  } catch (err) {
+    console.error('Map sync error:', err);
+    return -1;
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// COACHING SYNC — mirrors syncFromSheet(), pulls CoachingQueue
+// ═══════════════════════════════════════════════════════════════
+
+function getSyncedCoachingIds() {
+  try { return JSON.parse(localStorage.getItem('vf_synced_coaching_ids') || '[]'); } catch { return []; }
+}
+function addSyncedCoachingId(id) {
+  const ids = getSyncedCoachingIds();
+  if (!ids.includes(id)) { ids.push(id); localStorage.setItem('vf_synced_coaching_ids', JSON.stringify(ids)); }
+}
+
+// Session type answers come through as the full descriptive option text,
+// e.g. "Full Session Prep - Let's get your next session ready to run ($30, up to 1hr)"
+// so match on the short prefix and attach the known starting price.
+const COACHING_SERVICE_MAP = [
+  { match: 'NPC Building', label: 'NPC Building Session', price: 15 },
+  { match: 'Creature/Encounter Building', label: 'Creature/Encounter Building', price: 15 },
+  { match: 'Full Session Prep', label: 'Full Session Prep', price: 30 },
+  { match: 'How to be a Better Player', label: 'How To Be A Better Player', price: 25 },
+  { match: 'Player Character Build', label: 'Player Character Build Session', price: 40 },
+  { match: 'Full DM Coaching', label: 'Full DM Coaching Session', price: 40 },
+];
+
+function mapCoachingService(sessionTypeStr) {
+  if (!sessionTypeStr) return { label: 'Not Sure / Other', price: 0 };
+  const found = COACHING_SERVICE_MAP.find(s => sessionTypeStr.includes(s.match));
+  return found ? { label: found.label, price: found.price } : { label: sessionTypeStr, price: 0 };
+}
+
+async function syncCoachingFromSheet(silent) {
+  try {
+    const res = await fetch(APPS_SCRIPT_URL + '?action=getCoaching', { method: 'GET', redirect: 'follow' });
+    if (!res.ok) throw new Error('Network error: ' + res.status);
+    const data = await res.json();
+    if (!Array.isArray(data)) throw new Error('Unexpected response format');
+
+    const syncedIds = getSyncedCoachingIds();
+    let newCount = 0;
+
+    data.forEach(row => {
+      const id = row.ID;
+      if (!id || syncedIds.includes(id)) return;
+
+      const addons = row.Addons || '';
+      const serviceInfo = mapCoachingService(row.SessionType || '');
+      const rushRequested = addons.includes('Rush Session');
+
+      const noteParts = [];
+      if (row.PlayerOrDM) noteParts.push('Player/DM: ' + row.PlayerOrDM);
+      if (row.Experience) noteParts.push('Experience: ' + row.Experience);
+      if (row.SpecificCoverage) noteParts.push('Wants to cover: ' + row.SpecificCoverage);
+      if (row.PreferredTime) noteParts.push('Preferred time: ' + row.PreferredTime);
+      if (rushRequested) noteParts.push('⚡ RUSH SESSION REQUESTED (+$30)');
+      if (row.OtherNotes) noteParts.push('Other: ' + row.OtherNotes);
+
+      const session = {
+        id: id,
+        clientName: row.ClientName || 'Unknown',
+        contactMethod: row.ContactMethod || '',
+        service: serviceInfo.label,
+        price: serviceInfo.price + (rushRequested ? 30 : 0),
+        date: '', // form collects a free-text preference, not a locked date -- Vorpal confirms and sets this
+        time: '',
+        paymentStatus: '',
+        topic: row.Goals || '',
+        notes: noteParts.join('\n'),
+        fromForm: true,
+        sheetId: id,
+      };
+
+      coachingSessions.push(session);
+      addSyncedCoachingId(id);
+      newCount++;
+    });
+
+    if (newCount > 0) {
+      save('vf_coaching', coachingSessions);
+      renderCoachingMini();
+      renderCoachingFull();
+    }
+    return newCount;
+  } catch (err) {
+    console.error('Coaching sync error:', err);
+    return -1;
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// SYNC ALL — single button, pulls Music + One-Shot + Map + Coaching
+// ═══════════════════════════════════════════════════════════════
+
+async function syncAllFromSheet() {
+  const syncBtn = document.getElementById('sync-btn');
+  const syncStatus = document.getElementById('sync-status');
+  if (syncBtn) syncBtn.textContent = '⟳ Syncing...';
+  if (syncStatus) syncStatus.textContent = '';
+
+  const results = { music: 0, oneshot: 0, map: 0, coaching: 0 };
+  let hadError = false;
+
+  results.music = await syncFromSheet();
+  results.oneshot = await syncOneShotsFromSheet();
+  results.map = await syncMapsFromSheet();
+  results.coaching = await syncCoachingFromSheet();
+
+  Object.values(results).forEach(v => { if (v === -1) hadError = true; });
+  const totalNew = Object.values(results).filter(v => v > 0).reduce((a,b) => a+b, 0);
+
+  if (syncStatus) {
+    if (hadError) {
+      syncStatus.textContent = '⚠ Some sources failed -- check console';
       syncStatus.style.color = 'var(--danger)';
+    } else if (totalNew > 0) {
+      const parts = [];
+      if (results.music > 0) parts.push(results.music + ' music');
+      if (results.oneshot > 0) parts.push(results.oneshot + ' one-shot');
+      if (results.map > 0) parts.push(results.map + ' map');
+      if (results.coaching > 0) parts.push(results.coaching + ' coaching');
+      syncStatus.textContent = `✓ ${totalNew} new: ${parts.join(', ')}`;
+      syncStatus.style.color = 'var(--success)';
+      showPraise('waitlistMove');
+    } else {
+      syncStatus.textContent = '✓ All up to date';
+      syncStatus.style.color = 'var(--text-ghost)';
     }
   }
 
-  if (syncBtn) syncBtn.textContent = '⟳ Sync Form Submissions';
-  setTimeout(() => { if (syncStatus) syncStatus.textContent = ''; }, 4000);
+  if (syncBtn) syncBtn.textContent = '⟳ Sync All Forms';
+  setTimeout(() => { if (syncStatus) syncStatus.textContent = ''; }, 5000);
 }
 
 function mapLengthToType(lengthStr) {
@@ -4507,6 +5197,7 @@ function renderOneShotFull() {
 }
 
 renderBoard();
+renderMapBoard();
 renderReminders();
 renderTodoCats();
 renderTodos();
@@ -4521,9 +5212,8 @@ updateSocialMediaReminder();
 // Set today's date on expense form
 document.getElementById('exp-date').value = new Date().toISOString().split('T')[0];
 
-// Auto-sync on load (silent -- no UI feedback on first load)
-syncFromSheet();
-syncOneShotsFromSheet();
+// Auto-sync on load, pulls Music + One-Shot + Map + Coaching in one pass
+syncAllFromSheet();
 
 </script>
 </body>
