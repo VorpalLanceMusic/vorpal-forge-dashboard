@@ -3778,43 +3778,43 @@ function renderCalendar() {
       return { b, top, height, startMin: clampedStart, endMin: endMinEff };
     }).filter(Boolean);
 
-    // ── Collision detection: group overlapping blocks into clusters ──
-    // Sort by start time
-    placed.sort((a, b) => a.startMin - b.startMin);
+    // ── Collision detection: interval-graph column assignment ──
+    // Sort by start time, then by end time descending for ties
+    placed.sort((a, b) => a.startMin - b.startMin || b.endMin - a.endMin);
 
-    // Assign each block a column slot within its overlap group
-    // Uses a greedy "earliest free column" algorithm
-    const slots = new Array(placed.length).fill(0);
-    const colCounts = new Array(placed.length).fill(1);
+    // Step 1: assign each block a column using earliest-free-column
+    // Track what end-time each column is free from
+    const colEnds = []; // colEnds[c] = the endMin of the last block assigned to col c
+    const slots = [];
 
-    for (let a = 0; a < placed.length; a++) {
-      // find all blocks that overlap with a
-      const group = [a];
-      for (let b = 0; b < placed.length; b++) {
-        if (b === a) continue;
-        if (placed[a].startMin < placed[b].endMin && placed[a].endMin > placed[b].startMin) {
-          group.push(b);
+    for (let i = 0; i < placed.length; i++) {
+      const { startMin } = placed[i];
+      // find the first column that is free (its last block already ended)
+      let assigned = -1;
+      for (let c = 0; c < colEnds.length; c++) {
+        if (colEnds[c] <= startMin) { assigned = c; break; }
+      }
+      if (assigned === -1) {
+        assigned = colEnds.length; // open a new column
+        colEnds.push(0);
+      }
+      colEnds[assigned] = placed[i].endMin;
+      slots.push(assigned);
+    }
+
+    // Step 2: for each block, find the total number of columns in its overlap cluster
+    // A block's cluster width = max column index among all blocks it overlaps + 1
+    const colCounts = placed.map((p, i) => {
+      let maxCol = slots[i];
+      for (let j = 0; j < placed.length; j++) {
+        if (i === j) continue;
+        // overlaps if intervals intersect
+        if (placed[j].startMin < p.endMin && placed[j].endMin > p.startMin) {
+          if (slots[j] > maxCol) maxCol = slots[j];
         }
       }
-      // within this group, assign columns greedily
-      // first sort group by start time
-      group.sort((x, y) => placed[x].startMin - placed[y].startMin);
-      const usedCols = [];
-      group.forEach((idx, rank) => {
-        // find lowest col not used by any already-assigned member that overlaps this one
-        let col = 0;
-        while (usedCols.some((u, r) => u === col &&
-          placed[group[r]].startMin < placed[idx].endMin &&
-          placed[group[r]].endMin   > placed[idx].startMin &&
-          r < rank)) {
-          col++;
-        }
-        if (slots[idx] === undefined || col > slots[idx]) slots[idx] = col;
-      });
-      // total cols in this group = max slot + 1
-      const maxSlot = Math.max(...group.map(idx => slots[idx]));
-      group.forEach(idx => { colCounts[idx] = Math.max(colCounts[idx], maxSlot + 1); });
-    }
+      return maxCol + 1;
+    });
 
     // ── Render blocks with computed left/width ──
     const GAP = 2; // px gap between side-by-side blocks
