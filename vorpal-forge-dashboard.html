@@ -734,6 +734,7 @@
     top: 0;
     background: var(--bg-panel);
     z-index: 10;
+    backdrop-filter: blur(8px);
   }
 
   .cal-header-gutter { /* time label gutter */ }
@@ -1827,7 +1828,7 @@
           <button class="btn btn-gold btn-sm" onclick="confirmSaveDefault()">💾 Save as Default</button>
         </div>
       </div>
-      <div class="panel-body" style="overflow:visible; padding: 0;">
+      <div class="panel-body" id="cal-scroll-container" style="overflow-y:auto; overflow-x:hidden; max-height:600px; padding: 0;">
         <div class="cal-outer" id="cal-outer">
           <!-- Rendered by JS -->
         </div>
@@ -3613,10 +3614,12 @@ function saveNewTodo() {
 const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const BLOCK_TYPES = ['stream', 'music', 'coaching', 'oneshot', 'caelos', 'admin', 'family', 'personal'];
 
-// Time grid config: 7:50 AM to 1:00 AM (next day)
-// We store times as minutes-from-midnight. Display range: 470 (7:50) to 1500 (25:00 = 1am next day)
-const CAL_START_MIN = 470;  // 7:50 AM
-const CAL_END_MIN   = 1500; // 1:00 AM next day (25 * 60)
+// Time grid config: 5:00 AM to 3:00 AM (next day)
+// Times 0:00-2:59 belong to the PREVIOUS calendar day (post-midnight late night)
+// and are rendered as 24:00-26:59 so they appear after midnight on their day
+const CAL_START_MIN = 300;  // 5:00 AM
+const CAL_END_MIN   = 1620; // 3:00 AM next day (27 * 60)
+const LATE_CUTOFF   = 180;  // minutes < this (3AM) are treated as previous-day late night
 const PX_PER_MIN    = 40 / 60; // 40px per hour
 
 // Swatch palette for custom colors
@@ -3653,20 +3656,26 @@ function isDateInCurrentWeek(dateStr) {
   return d >= new Date(start.toDateString()) && d <= new Date(end.toDateString());
 }
 
-// Convert "8:30 PM" or "21:30" to total minutes from midnight
+// Convert "8:30 PM" or "21:30" to total minutes from midnight.
+// Times before LATE_CUTOFF (3 AM = 180 min) are treated as post-midnight late-night
+// and wrapped to 24h+ (e.g. 1:00 AM -> 25:00 = 1500 min) so they render on the
+// PREVIOUS calendar day's column after midnight.
 function timeToMin(t) {
   if (!t) return null;
-  // Already 24h format from <input type=time>
+  let raw = null;
   let m12 = t.match(/^(\d+):(\d+)\s*(AM|PM)$/i);
   if (m12) {
     let h = parseInt(m12[1]), m = parseInt(m12[2]), ap = m12[3].toUpperCase();
     if (ap === 'PM' && h !== 12) h += 12;
     if (ap === 'AM' && h === 12) h = 0;
-    return h * 60 + m;
+    raw = h * 60 + m;
   }
   let m24 = t.match(/^(\d+):(\d+)$/);
-  if (m24) return parseInt(m24[1]) * 60 + parseInt(m24[2]);
-  return null;
+  if (!raw && m24) raw = parseInt(m24[1]) * 60 + parseInt(m24[2]);
+  if (raw === null) return null;
+  // Wrap post-midnight times (0:00-2:59) to 24h+ so they sort after midnight
+  if (raw < LATE_CUTOFF) raw += 24 * 60;
+  return raw;
 }
 
 function to24h(time12) {
@@ -6292,6 +6301,16 @@ renderReminders();
 renderTodoCats();
 renderTodos();
 renderCalendar();
+// Auto-scroll calendar to 7:45 AM on load so the day starts in view
+(function() {
+  const container = document.getElementById('cal-scroll-container');
+  if (!container) return;
+  // 7:45 AM = 465 minutes from midnight
+  const targetMin = 7 * 60 + 45;
+  const scrollPx = (targetMin - CAL_START_MIN) * PX_PER_MIN;
+  // Small delay to let the grid render first
+  setTimeout(() => { container.scrollTop = Math.max(0, scrollPx); }, 50);
+})();
 renderExpenses();
 renderCoachingMini();
 renderCoachingFull();
