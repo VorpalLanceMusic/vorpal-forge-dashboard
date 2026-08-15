@@ -3752,31 +3752,85 @@ function renderCalendar() {
   // Day columns
   const colsHTML = weekDates.map((date, i) => {
     const key = DAYS[i];
-    const blocks = (calCurrent[key] || []);
+    const allBlocks = (calCurrent[key] || []);
 
-    const blocksHTML = blocks.map(b => {
+    // ── Compute top/height for every block, filter out timeless ones ──
+    const placed = allBlocks.map(b => {
       const startMin = timeToMin(b.startTime);
       const endMin   = timeToMin(b.endTime);
-
-      let top, height;
-      if (startMin !== null) {
-        const clampedStart = Math.max(startMin, CAL_START_MIN);
-        top = minToPx(clampedStart);
-        if (endMin !== null && endMin > startMin) {
-          const clampedEnd = Math.min(endMin > 24*60 ? endMin : endMin < startMin ? endMin + 24*60 : endMin, CAL_END_MIN);
-          height = Math.max((clampedEnd - clampedStart) * PX_PER_MIN, 18);
-        } else {
-          height = 24; // point-in-time event
-        }
+      if (startMin === null) return null;
+      const clampedStart = Math.max(startMin, CAL_START_MIN);
+      let height;
+      if (endMin !== null && endMin !== startMin) {
+        // handle overnight: if end < start, wrap by adding 24h
+        const endAdj = endMin < startMin ? endMin + 24*60 : endMin;
+        const clampedEnd = Math.min(endAdj, CAL_END_MIN);
+        height = Math.max((clampedEnd - clampedStart) * PX_PER_MIN, 18);
       } else {
-        return ''; // no time = skip in grid view
+        height = 24;
       }
+      const top = minToPx(clampedStart);
+      // effective end minute for collision purposes
+      const endMinEff = endMin !== null && endMin !== startMin
+        ? (endMin < startMin ? endMin + 24*60 : endMin)
+        : startMin + 30;
+      return { b, top, height, startMin: clampedStart, endMin: endMinEff };
+    }).filter(Boolean);
+
+    // ── Collision detection: group overlapping blocks into clusters ──
+    // Sort by start time
+    placed.sort((a, b) => a.startMin - b.startMin);
+
+    // Assign each block a column slot within its overlap group
+    // Uses a greedy "earliest free column" algorithm
+    const slots = new Array(placed.length).fill(0);
+    const colCounts = new Array(placed.length).fill(1);
+
+    for (let a = 0; a < placed.length; a++) {
+      // find all blocks that overlap with a
+      const group = [a];
+      for (let b = 0; b < placed.length; b++) {
+        if (b === a) continue;
+        if (placed[a].startMin < placed[b].endMin && placed[a].endMin > placed[b].startMin) {
+          group.push(b);
+        }
+      }
+      // within this group, assign columns greedily
+      // first sort group by start time
+      group.sort((x, y) => placed[x].startMin - placed[y].startMin);
+      const usedCols = [];
+      group.forEach((idx, rank) => {
+        // find lowest col not used by any already-assigned member that overlaps this one
+        let col = 0;
+        while (usedCols.some((u, r) => u === col &&
+          placed[group[r]].startMin < placed[idx].endMin &&
+          placed[group[r]].endMin   > placed[idx].startMin &&
+          r < rank)) {
+          col++;
+        }
+        if (slots[idx] === undefined || col > slots[idx]) slots[idx] = col;
+      });
+      // total cols in this group = max slot + 1
+      const maxSlot = Math.max(...group.map(idx => slots[idx]));
+      group.forEach(idx => { colCounts[idx] = Math.max(colCounts[idx], maxSlot + 1); });
+    }
+
+    // ── Render blocks with computed left/width ──
+    const GAP = 2; // px gap between side-by-side blocks
+    const blocksHTML = placed.map(({ b, top, height }, i) => {
+      const totalCols = colCounts[i];
+      const slot      = slots[i];
+      const pct       = 100 / totalCols;
+      const leftPct   = slot * pct;
+      // small inset so borders don't touch column edge
+      const leftStyle  = `calc(${leftPct}% + ${GAP}px)`;
+      const widthStyle = `calc(${pct}% - ${GAP * 2}px)`;
 
       const timeLabel = b.startTime + (b.endTime ? ' \u2013 ' + b.endTime : '');
       const customStyle = getBlockStyle(b);
       const cls = getBlockClass(b);
 
-      return `<div class="${cls}" style="top:${top}px;height:${height}px;${customStyle}"
+      return `<div class="${cls}" style="top:${top}px;height:${height}px;left:${leftStyle};width:${widthStyle};right:auto;${customStyle}"
           draggable="true"
           ondragstart="calDragStart(event,'${key}','${esc(b.id)}')"
           ondblclick="event.stopPropagation();editCalBlock('${key}','${esc(b.id)}')">
