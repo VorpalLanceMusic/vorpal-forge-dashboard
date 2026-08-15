@@ -716,88 +716,184 @@
   .btn-icon:hover { color: var(--teal); background: var(--teal-ghost); }
 
   /* ── CALENDAR ── */
-  .calendar-grid {
-    display: grid;
-    grid-template-columns: repeat(7, 1fr);
-    gap: 4px;
-    flex: 1;
-  }
-
-  .cal-day {
+  /* ── TIME-GRID CALENDAR ── */
+  .cal-outer {
     display: flex;
     flex-direction: column;
-    gap: 3px;
-    min-height: 100px;
+    gap: 0;
+    width: 100%;
+    overflow-x: auto;
   }
+
+  .cal-header-row {
+    display: grid;
+    grid-template-columns: 44px repeat(7, 1fr);
+    gap: 0;
+    border-bottom: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+    background: var(--bg-panel);
+    z-index: 10;
+  }
+
+  .cal-header-gutter { /* time label gutter */ }
 
   .cal-day-header {
     font-size: 0.62rem;
     color: var(--text-ghost);
     text-align: center;
-    padding: 3px 0;
+    padding: 5px 2px 4px;
     text-transform: uppercase;
     letter-spacing: 0.08em;
-    border-bottom: 1px solid var(--border);
+    border-left: 1px solid var(--border);
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  .cal-day-header:hover { background: var(--teal-ghost); }
+  .cal-day-header.today { color: var(--teal); border-bottom: 2px solid var(--teal); }
+  .cal-day-header .cal-date-sub { font-size: 0.55rem; opacity: 0.55; display: block; margin-top: 1px; }
+
+  .cal-body {
+    display: grid;
+    grid-template-columns: 44px repeat(7, 1fr);
+    gap: 0;
+    position: relative;
   }
 
-  .cal-day-header.today { color: var(--teal); border-bottom-color: var(--teal); }
-
-  .cal-blocks {
+  .cal-time-gutter {
     display: flex;
     flex-direction: column;
-    gap: 2px;
-    flex: 1;
+    position: relative;
+  }
+
+  .cal-time-label {
+    height: 40px; /* 1 hour = 40px */
+    display: flex;
+    align-items: flex-start;
+    justify-content: flex-end;
+    padding-right: 6px;
+    padding-top: 2px;
+    font-size: 0.52rem;
+    color: var(--text-ghost);
+    letter-spacing: 0.04em;
+    flex-shrink: 0;
+  }
+
+  .cal-day-col {
+    position: relative;
+    border-left: 1px solid var(--border);
+    min-height: 760px; /* 19 hours * 40px */
+    background: repeating-linear-gradient(
+      to bottom,
+      transparent 0px,
+      transparent 39px,
+      rgba(255,255,255,0.025) 39px,
+      rgba(255,255,255,0.025) 40px
+    );
+    cursor: crosshair;
+  }
+
+  .cal-day-col.drag-over {
+    background: rgba(0, 212, 200, 0.05);
+  }
+
+  /* Half-hour tick */
+  .cal-day-col::after {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: repeating-linear-gradient(
+      to bottom,
+      transparent 0px,
+      transparent 19px,
+      rgba(255,255,255,0.012) 19px,
+      rgba(255,255,255,0.012) 20px,
+      transparent 20px,
+      transparent 40px
+    );
+    pointer-events: none;
   }
 
   .cal-block {
-    padding: 4px 6px;
+    position: absolute;
+    left: 2px;
+    right: 2px;
+    padding: 3px 5px;
     border-radius: 4px;
-    font-size: 0.63rem;
+    font-size: 0.6rem;
     cursor: grab;
-    transition: all 0.15s;
+    transition: filter 0.15s, box-shadow 0.15s;
     border: 1px solid transparent;
     line-height: 1.3;
     user-select: none;
     display: flex;
     flex-direction: column;
     gap: 1px;
+    overflow: hidden;
+    min-height: 18px;
+    z-index: 2;
+    box-sizing: border-box;
   }
+
+  .cal-block:hover { filter: brightness(1.25); box-shadow: 0 2px 8px rgba(0,0,0,0.4); z-index: 5; }
+  .cal-block:active { cursor: grabbing; }
+  .cal-block.dragging { opacity: 0.4; }
 
   .cal-block-time {
-    font-size: 0.58rem;
-    opacity: 0.75;
+    font-size: 0.53rem;
+    opacity: 0.7;
     letter-spacing: 0.02em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
-  .cal-block-label {
-    display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
-    gap: 4px;
+  .cal-block-text {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    flex: 1;
   }
 
-  .cal-block:hover { filter: brightness(1.2); }
-  .cal-block:active { cursor: grabbing; }
-
-  .cal-block.stream { background: rgba(0, 150, 200, 0.2); color: #60c8e8; border-color: rgba(64, 184, 224, 0.2); }
-  .cal-block.music { background: rgba(160, 80, 200, 0.2); color: #c080e8; border-color: rgba(160, 80, 200, 0.2); }
-  .cal-block.coaching { background: var(--gold-ghost); color: var(--gold); border-color: var(--border-gold); }
-  .cal-block.admin { background: rgba(100, 100, 120, 0.2); color: #8888aa; border-color: rgba(100, 100, 120, 0.2); }
-  .cal-block.family { background: rgba(85, 204, 136, 0.15); color: #80cc99; border-color: rgba(85, 204, 136, 0.15); }
-  .cal-block.oneshot { background: var(--teal-ghost); color: var(--teal); border-color: var(--border); }
-
-  .cal-add {
-    font-size: 0.65rem;
-    color: var(--text-ghost);
-    text-align: center;
-    padding: 3px;
+  .cal-block-del {
+    position: absolute;
+    top: 2px; right: 3px;
+    font-size: 0.55rem;
+    opacity: 0;
     cursor: pointer;
-    border-radius: 4px;
-    transition: all 0.2s;
-    border: 1px dashed transparent;
+    transition: opacity 0.15s;
+    line-height: 1;
   }
+  .cal-block:hover .cal-block-del { opacity: 0.5; }
+  .cal-block-del:hover { opacity: 1 !important; }
 
-  .cal-add:hover { border-color: var(--border); color: var(--text-dim); }
+  /* Block type colors — now support custom color override via inline style */
+  .cal-block.stream  { background: rgba(0,150,200,0.22);  color: #60c8e8; border-color: rgba(64,184,224,0.25); }
+  .cal-block.music   { background: rgba(160,80,200,0.22); color: #c080e8; border-color: rgba(160,80,200,0.25); }
+  .cal-block.coaching{ background: var(--gold-ghost);     color: var(--gold); border-color: var(--border-gold); }
+  .cal-block.admin   { background: rgba(100,100,120,0.22);color: #9090b0; border-color: rgba(100,100,120,0.25); }
+  .cal-block.family  { background: rgba(85,204,136,0.18); color: #80cc99; border-color: rgba(85,204,136,0.2); }
+  .cal-block.oneshot { background: var(--teal-ghost);     color: var(--teal); border-color: var(--border); }
+  .cal-block.caelos  { background: rgba(200,80,80,0.2);   color: #e88080; border-color: rgba(200,80,80,0.25); }
+  .cal-block.personal{ background: rgba(255,180,60,0.15); color: #ffb84a; border-color: rgba(255,180,60,0.2); }
+  .cal-block.custom  { /* color set via inline style */ border-color: rgba(255,255,255,0.15); }
+
+  /* "Add" ghost block that appears on click of empty time */
+  .cal-add-ghost {
+    position: absolute;
+    left: 2px; right: 2px;
+    border-radius: 4px;
+    border: 1px dashed var(--border);
+    background: var(--teal-ghost);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.6rem;
+    color: var(--teal);
+    cursor: pointer;
+    z-index: 3;
+    min-height: 20px;
+  }
 
   .cal-actions {
     display: flex;
@@ -805,6 +901,196 @@
     flex-shrink: 0;
     align-items: center;
   }
+
+
+  /* ── NOW BAR — persistent schedule tracker ── */
+  #now-bar {
+    position: fixed;
+    bottom: 0;
+    left: 0; right: 0;
+    z-index: 50;
+    pointer-events: none;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .now-bar-inner {
+    pointer-events: all;
+    margin: 0 12px 10px;
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 -4px 24px rgba(0,0,0,0.5);
+    display: flex;
+    flex-direction: column;
+  }
+
+  .now-current {
+    background: rgba(10, 14, 20, 0.93);
+    backdrop-filter: blur(14px);
+    border: 1px solid var(--border);
+    border-bottom: none;
+    border-radius: 10px 10px 0 0;
+    padding: 8px 14px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-height: 44px;
+  }
+
+  .now-current.solo {
+    border-radius: 10px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .now-current-label {
+    font-size: 0.6rem;
+    color: var(--teal);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    flex-shrink: 0;
+    font-family: "Cinzel", serif;
+  }
+
+  .now-current-text {
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--text);
+    flex: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .now-current-time {
+    font-size: 0.6rem;
+    color: var(--text-ghost);
+    flex-shrink: 0;
+  }
+
+  .now-ack-btn {
+    background: none;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text-ghost);
+    font-size: 0.65rem;
+    padding: 3px 9px;
+    cursor: pointer;
+    font-family: "Inter", sans-serif;
+    transition: all 0.2s;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    white-space: nowrap;
+  }
+  .now-ack-btn:hover { border-color: var(--teal); color: var(--teal); }
+  .now-ack-btn.checked { border-color: var(--success); color: var(--success); }
+
+  .now-missed {
+    background: #e8e8e8;
+    border: 1px solid #bbb;
+    border-top: 2px solid #c0392b;
+    border-radius: 0 0 10px 10px;
+    padding: 7px 14px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    animation: now-missed-pulse 3s ease-in-out infinite;
+  }
+
+  .now-missed.solo {
+    border-radius: 10px;
+    border-top: 1px solid #c0392b;
+  }
+
+  @keyframes now-missed-pulse {
+    0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(192,57,43,0); }
+    50%       { opacity: 0.88; box-shadow: 0 0 12px 2px rgba(192,57,43,0.18); }
+  }
+
+  .now-missed-label {
+    font-size: 0.6rem;
+    color: #c0392b;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    font-weight: 700;
+    flex-shrink: 0;
+    font-family: "Cinzel", serif;
+  }
+
+  .now-missed-text {
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: #1a1a1a;
+    flex: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .now-missed-time {
+    font-size: 0.6rem;
+    color: #666;
+    flex-shrink: 0;
+  }
+
+  .now-missed-ack {
+    background: none;
+    border: 1px solid #999;
+    border-radius: 6px;
+    color: #333;
+    font-size: 0.65rem;
+    padding: 3px 9px;
+    cursor: pointer;
+    font-family: "Inter", sans-serif;
+    font-weight: 600;
+    transition: all 0.15s;
+    flex-shrink: 0;
+    white-space: nowrap;
+  }
+  .now-missed-ack:hover { background: #c0392b; color: white; border-color: #c0392b; }
+
+  .now-idle {
+    background: rgba(10,14,20,0.88);
+    backdrop-filter: blur(14px);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 8px 14px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .now-idle-label {
+    font-size: 0.6rem;
+    color: var(--text-ghost);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    font-family: "Cinzel", serif;
+  }
+  .now-idle-text {
+    font-size: 0.72rem;
+    color: var(--text-ghost);
+    flex: 1;
+    font-style: italic;
+  }
+
+  /* Color swatch picker in modal */
+  .color-swatches {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 4px;
+  }
+  .color-swatch {
+    width: 22px; height: 22px;
+    border-radius: 50%;
+    cursor: pointer;
+    border: 2px solid transparent;
+    transition: transform 0.15s, border-color 0.15s;
+  }
+  .color-swatch:hover { transform: scale(1.15); }
+  .color-swatch.selected { border-color: white; transform: scale(1.15); }
 
   /* ── TODO ── */
   .todo-categories {
@@ -1542,8 +1828,8 @@
           <button class="btn btn-gold btn-sm" onclick="confirmSaveDefault()">💾 Save as Default</button>
         </div>
       </div>
-      <div class="panel-body" style="overflow:visible;">
-        <div class="calendar-grid" id="calendar-grid">
+      <div class="panel-body" style="overflow:visible; padding: 0;">
+        <div class="cal-outer" id="cal-outer">
           <!-- Rendered by JS -->
         </div>
       </div>
@@ -1810,6 +2096,11 @@
 
 <!-- PRAISE OVERLAY -->
 <div class="praise-overlay" id="praise-overlay" style="display:none;"></div>
+
+<!-- NOW BAR -->
+<div id="now-bar">
+  <div class="now-bar-inner" id="now-bar-inner"></div>
+</div>
 
 <!-- MODALS -->
 <div id="modal-backdrop" class="modal-backdrop" style="display:none;" onclick="closeModal(event)">
@@ -3318,10 +3609,30 @@ function saveNewTodo() {
 }
 
 // ═══════════════════════════════════════════════
-// CALENDAR
+// CALENDAR — TIME GRID
 // ═══════════════════════════════════════════════
 const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-const BLOCK_TYPES = ['stream', 'music', 'coaching', 'oneshot', 'admin', 'family'];
+const BLOCK_TYPES = ['stream', 'music', 'coaching', 'oneshot', 'caelos', 'admin', 'family', 'personal'];
+
+// Time grid config: 7:50 AM to 1:00 AM (next day)
+// We store times as minutes-from-midnight. Display range: 470 (7:50) to 1500 (25:00 = 1am next day)
+const CAL_START_MIN = 470;  // 7:50 AM
+const CAL_END_MIN   = 1500; // 1:00 AM next day (25 * 60)
+const PX_PER_MIN    = 40 / 60; // 40px per hour
+
+// Swatch palette for custom colors
+const CAL_COLORS = [
+  { label: 'Teal',    bg: 'rgba(0,212,200,0.22)',   color: '#00d4c8', border: 'rgba(0,212,200,0.3)' },
+  { label: 'Gold',    bg: 'rgba(240,192,64,0.18)',   color: '#f0c040', border: 'rgba(240,192,64,0.3)' },
+  { label: 'Purple',  bg: 'rgba(160,80,200,0.22)',   color: '#c080e8', border: 'rgba(160,80,200,0.3)' },
+  { label: 'Blue',    bg: 'rgba(0,150,200,0.22)',    color: '#60c8e8', border: 'rgba(64,184,224,0.3)' },
+  { label: 'Green',   bg: 'rgba(85,204,136,0.2)',    color: '#80cc99', border: 'rgba(85,204,136,0.3)' },
+  { label: 'Red',     bg: 'rgba(200,80,80,0.22)',    color: '#e88080', border: 'rgba(200,80,80,0.3)' },
+  { label: 'Orange',  bg: 'rgba(255,150,60,0.2)',    color: '#ffb84a', border: 'rgba(255,150,60,0.3)' },
+  { label: 'Slate',   bg: 'rgba(100,100,140,0.22)',  color: '#9090b8', border: 'rgba(100,100,140,0.3)' },
+  { label: 'Rose',    bg: 'rgba(220,100,150,0.2)',   color: '#e880b0', border: 'rgba(220,100,150,0.3)' },
+  { label: 'Lime',    bg: 'rgba(140,220,80,0.18)',   color: '#a8e060', border: 'rgba(140,220,80,0.3)' },
+];
 
 function getWeekDates() {
   const today = new Date();
@@ -3334,7 +3645,6 @@ function getWeekDates() {
   });
 }
 
-// Checks whether a yyyy-mm-dd date string falls within the current Sun-Sat week
 function isDateInCurrentWeek(dateStr) {
   if (!dateStr) return false;
   const d = new Date(dateStr + 'T00:00:00');
@@ -3344,164 +3654,20 @@ function isDateInCurrentWeek(dateStr) {
   return d >= new Date(start.toDateString()) && d <= new Date(end.toDateString());
 }
 
-// Auto-syncs a Coaching or One-Shot session's date/time onto the weekly
-// calendar. Tags the block with sourceId so it can be found and updated
-// again later instead of duplicating. Only surfaces on the calendar when
-// the date falls in the currently-displayed week (calCurrent is keyed by
-// weekday name, not an actual date).
-function syncSessionToCalendar(sourceId, type, label, dateStr, timeStr) {
-  removeCalendarSync(sourceId);
-  if (!dateStr || !isDateInCurrentWeek(dateStr)) { save('vf_cal_current', calCurrent); return; }
-
-  const d = new Date(dateStr + 'T00:00:00');
-  const dayKey = DAYS[d.getDay()];
-
-  function fmt12(t) {
-    if (!t) return '';
-    const [h, m] = t.split(':').map(Number);
-    const ampm = h >= 12 ? 'PM' : 'AM';
-    const h12 = h % 12 || 12;
-    return h12 + ':' + String(m).padStart(2,'0') + ' ' + ampm;
+// Convert "8:30 PM" or "21:30" to total minutes from midnight
+function timeToMin(t) {
+  if (!t) return null;
+  // Already 24h format from <input type=time>
+  let m12 = t.match(/^(\d+):(\d+)\s*(AM|PM)$/i);
+  if (m12) {
+    let h = parseInt(m12[1]), m = parseInt(m12[2]), ap = m12[3].toUpperCase();
+    if (ap === 'PM' && h !== 12) h += 12;
+    if (ap === 'AM' && h === 12) h = 0;
+    return h * 60 + m;
   }
-
-  if (!calCurrent[dayKey]) calCurrent[dayKey] = [];
-  calCurrent[dayKey].push({
-    id: 'b_sync_' + sourceId,
-    text: (type === 'coaching' ? '🎲 Coaching: ' : '🎲 One-Shot: ') + label,
-    type: type,
-    startTime: fmt12(timeStr),
-    endTime: '',
-    details: { sourceId },
-  });
-  save('vf_cal_current', calCurrent);
-  if (typeof renderCalendar === 'function') renderCalendar();
-}
-
-// Removes any calendar block previously auto-created for this session
-function removeCalendarSync(sourceId) {
-  let changed = false;
-  Object.keys(calCurrent).forEach(day => {
-    const before = (calCurrent[day] || []).length;
-    calCurrent[day] = (calCurrent[day] || []).filter(b => b.id !== 'b_sync_' + sourceId);
-    if (calCurrent[day].length !== before) changed = true;
-  });
-  if (changed) {
-    save('vf_cal_current', calCurrent);
-    if (typeof renderCalendar === 'function') renderCalendar();
-  }
-}
-
-function renderCalendar() {
-  const grid = document.getElementById('calendar-grid');
-  const today = new Date();
-  const weekDates = getWeekDates();
-
-  grid.innerHTML = weekDates.map((date, i) => {
-    const key = DAYS[i];
-    const isToday = date.toDateString() === today.toDateString();
-    const blocks = (calCurrent[key] || []);
-    return `<div class="cal-day"
-      ondragover="calDragOver(event)"
-      ondrop="calDrop(event,'${key}')"
-      ondragleave="calDragLeave(event)">
-      <div class="cal-day-header ${isToday?'today':''}">${DAYS[i]}<br><span style="font-size:0.58rem;">${date.getMonth()+1}/${date.getDate()}</span></div>
-      <div class="cal-blocks" id="cal-${key}">
-        ${blocks.map(b => `
-          <div class="cal-block ${b.type}" draggable="true"
-            ondragstart="calDragStart(event,'${key}','${b.id}')"
-            ondragover="event.stopPropagation();event.preventDefault()"
-            ondrop="event.stopPropagation();calDrop(event,'${key}')"
-            ondblclick="event.stopPropagation();editCalBlock('${key}','${b.id}')">
-            ${(b.startTime||b.endTime) ? `<div class="cal-block-time">${b.startTime||''}${b.startTime&&b.endTime?' — ':''}${b.endTime||''}</div>` : ''}
-            <div class="cal-block-label">
-              <span style="flex:1;">${esc(b.text)}</span>
-              <span style="cursor:pointer;opacity:0.4;flex-shrink:0;" onclick="event.stopPropagation();removeCalBlock('${key}','${b.id}')">✕</span>
-            </div>
-          </div>`).join('')}
-      </div>
-      <div class="cal-add" onclick="addCalBlock('${key}')">+ add</div>
-    </div>`;
-  }).join('');
-}
-
-let calDragInfo = null;
-
-function calDragStart(e, day, blockId) {
-  calDragInfo = { day, blockId };
-  e.dataTransfer.effectAllowed = 'move';
-}
-
-function calDragOver(e) {
-  e.preventDefault();
-  e.dataTransfer.dropEffect = 'move';
-  const day = e.currentTarget;
-  day.style.background = 'rgba(0,212,200,0.06)';
-}
-
-function calDragLeave(e) {
-  e.currentTarget.style.background = '';
-}
-
-function calDrop(e, targetDay) {
-  e.preventDefault();
-  e.currentTarget.style.background = '';
-  if (!calDragInfo || calDragInfo.day === targetDay) {
-    calDragInfo = null;
-    return;
-  }
-  const blocks = calCurrent[calDragInfo.day] || [];
-  const idx = blocks.findIndex(b => b.id === calDragInfo.blockId);
-  if (idx === -1) { calDragInfo = null; return; }
-  const [block] = blocks.splice(idx, 1);
-  calCurrent[calDragInfo.day] = blocks;
-  if (!calCurrent[targetDay]) calCurrent[targetDay] = [];
-  calCurrent[targetDay].push(block);
-  save('vf_cal_current', calCurrent);
-  calDragInfo = null;
-  renderCalendar();
-}
-
-function calBlockModal(day, existing) {
-  const isEdit = !!existing;
-  const details = existing && existing.details ? existing.details : {};
-  showModal(`
-    <div class="modal">
-      <div class="modal-title">${isEdit ? 'Edit Block — '+day : 'Add to '+day}</div>
-      <div class="form-group">
-        <label class="form-label">Label</label>
-        <input class="form-input" id="cb-text" placeholder="e.g. Stream night, Commission work..." value="${existing ? esc(existing.text) : ''}">
-      </div>
-      <div class="form-group">
-        <label class="form-label">What is this regarding?</label>
-        <select class="form-select" id="cb-type" onchange="renderCalBlockDetailFields(this.value, ${JSON.stringify(details).replace(/"/g,'&quot;')})">
-          ${BLOCK_TYPES.map(t=>`<option value="${t}" ${existing&&existing.type===t?'selected':''}>${t.charAt(0).toUpperCase()+t.slice(1)}</option>`).join('')}
-        </select>
-      </div>
-      <div class="form-row">
-        <div class="form-group">
-          <label class="form-label">Start Time <span style="color:var(--text-ghost);font-size:0.62rem;">(optional)</span></label>
-          <input class="form-input" id="cb-start" type="time" value="${existing&&existing.startTime ? to24h(existing.startTime) : ''}">
-        </div>
-        <div class="form-group">
-          <label class="form-label">End Time <span style="color:var(--text-ghost);font-size:0.62rem;">(optional)</span></label>
-          <input class="form-input" id="cb-end" type="time" value="${existing&&existing.endTime ? to24h(existing.endTime) : ''}">
-        </div>
-      </div>
-      <div id="cb-detail-fields"></div>
-      <div class="modal-actions">
-        ${isEdit ? `<button class="btn" style="color:var(--danger);border-color:var(--danger);" onclick="removeCalBlock('${day}','${existing.id}');closeModal()">Delete</button>` : ''}
-        <button class="btn" onclick="closeModal()">Cancel</button>
-        <button class="btn btn-teal" onclick="saveCalBlock('${day}','${existing ? existing.id : ''}')">
-          ${isEdit ? 'Save' : 'Add'}
-        </button>
-      </div>
-    </div>`);
-
-  // Render detail fields for the currently-selected type
-  setTimeout(() => {
-    const typeSelect = document.getElementById('cb-type');
-    renderCalBlockDetailFields(typeSelect.value, details);
-  }, 10);
+  let m24 = t.match(/^(\d+):(\d+)$/);
+  if (m24) return parseInt(m24[1]) * 60 + parseInt(m24[2]);
+  return null;
 }
 
 function to24h(time12) {
@@ -3515,11 +3681,319 @@ function to24h(time12) {
   return String(h).padStart(2,'0') + ':' + m;
 }
 
+function fmt12(t) {
+  if (!t) return '';
+  const [h, m] = t.split(':').map(Number);
+  const ampm = h >= 12 ? 'PM' : 'AM';
+  const h12 = h % 12 || 12;
+  return h12 + ':' + String(m).padStart(2,'0') + ' ' + ampm;
+}
+
+// Minutes from midnight → px from top of grid
+function minToPx(min) {
+  return (min - CAL_START_MIN) * PX_PER_MIN;
+}
+
+function pxToMin(px) {
+  return Math.round(px / PX_PER_MIN / 15) * 15 + CAL_START_MIN;
+}
+
+const TOTAL_PX = (CAL_END_MIN - CAL_START_MIN) * PX_PER_MIN;
+
+function getBlockStyle(b) {
+  // custom color override
+  if (b.customColor !== undefined && b.customColor !== null) {
+    const c = CAL_COLORS[b.customColor];
+    if (c) return `background:${c.bg};color:${c.color};border-color:${c.border};`;
+  }
+  return '';
+}
+
+function getBlockClass(b) {
+  if (b.customColor !== undefined && b.customColor !== null) return 'cal-block custom';
+  return 'cal-block ' + (b.type || 'admin');
+}
+
+function renderCalendar() {
+  const outer = document.getElementById('cal-outer');
+  if (!outer) return;
+  const today = new Date();
+  const weekDates = getWeekDates();
+  const totalPx = TOTAL_PX;
+
+  // Build hour labels
+  const hourLabels = [];
+  for (let m = CAL_START_MIN; m < CAL_END_MIN; m += 60) {
+    const displayH = m % (24*60);
+    const hh = Math.floor(displayH / 60);
+    const ampm = hh >= 12 ? 'PM' : 'AM';
+    const h12 = hh % 12 || 12;
+    const label = hh === 0 || hh === 12 ? `${h12}` : `${h12}`;
+    hourLabels.push({ label: `${h12}${ampm}`, top: minToPx(m) });
+  }
+
+  // Header row
+  const headerHTML = `<div class="cal-header-row">
+    <div class="cal-header-gutter"></div>
+    ${weekDates.map((date, i) => {
+      const key = DAYS[i];
+      const isToday = date.toDateString() === today.toDateString();
+      return `<div class="cal-day-header ${isToday?'today':''}" onclick="addCalBlockAt('${key}', null)">
+        ${DAYS[i]}<span class="cal-date-sub">${date.getMonth()+1}/${date.getDate()}</span>
+      </div>`;
+    }).join('')}
+  </div>`;
+
+  // Time gutter
+  const gutterHTML = `<div class="cal-time-gutter" style="height:${totalPx}px;position:relative;">
+    ${hourLabels.map(l => `<div class="cal-time-label" style="position:absolute;top:${l.top}px;right:6px;transform:translateY(-50%);">${l.label}</div>`).join('')}
+  </div>`;
+
+  // Day columns
+  const colsHTML = weekDates.map((date, i) => {
+    const key = DAYS[i];
+    const blocks = (calCurrent[key] || []);
+
+    const blocksHTML = blocks.map(b => {
+      const startMin = timeToMin(b.startTime);
+      const endMin   = timeToMin(b.endTime);
+
+      let top, height;
+      if (startMin !== null) {
+        const clampedStart = Math.max(startMin, CAL_START_MIN);
+        top = minToPx(clampedStart);
+        if (endMin !== null && endMin > startMin) {
+          const clampedEnd = Math.min(endMin > 24*60 ? endMin : endMin < startMin ? endMin + 24*60 : endMin, CAL_END_MIN);
+          height = Math.max((clampedEnd - clampedStart) * PX_PER_MIN, 18);
+        } else {
+          height = 24; // point-in-time event
+        }
+      } else {
+        return ''; // no time = skip in grid view
+      }
+
+      const timeLabel = b.startTime + (b.endTime ? ' \u2013 ' + b.endTime : '');
+      const customStyle = getBlockStyle(b);
+      const cls = getBlockClass(b);
+
+      return `<div class="${cls}" style="top:${top}px;height:${height}px;${customStyle}"
+          draggable="true"
+          ondragstart="calDragStart(event,'${key}','${esc(b.id)}')"
+          ondblclick="event.stopPropagation();editCalBlock('${key}','${esc(b.id)}')">
+          ${height > 28 ? `<div class="cal-block-time">${timeLabel}</div>` : ''}
+          <div class="cal-block-text">${esc(b.text)}</div>
+          <span class="cal-block-del" onclick="event.stopPropagation();removeCalBlock('${key}','${esc(b.id)}')">✕</span>
+        </div>`;
+    }).join('');
+
+    return `<div class="cal-day-col" id="cal-col-${key}" style="height:${totalPx}px;"
+        ondragover="calDragOver(event)"
+        ondrop="calDrop(event,'${key}',event)"
+        ondragleave="calDragLeave(event)"
+        onclick="calColClick(event,'${key}')">
+        ${blocksHTML}
+      </div>`;
+  }).join('');
+
+  outer.innerHTML = headerHTML + `<div class="cal-body">
+    ${gutterHTML}
+    ${colsHTML}
+  </div>`;
+}
+
+// ── Drag & drop (horizontal day move + vertical time move) ──
+let calDragInfo = null;
+
+function calDragStart(e, day, blockId) {
+  const el = e.currentTarget;
+  const rect = el.getBoundingClientRect();
+  calDragInfo = {
+    day,
+    blockId,
+    offsetY: e.clientY - rect.top, // where in the block the user grabbed
+  };
+  e.dataTransfer.effectAllowed = 'move';
+  setTimeout(() => el.classList.add('dragging'), 0);
+}
+
+function calDragOver(e) {
+  e.preventDefault();
+  e.dataTransfer.dropEffect = 'move';
+  e.currentTarget.classList.add('drag-over');
+}
+
+function calDragLeave(e) {
+  e.currentTarget.classList.remove('drag-over');
+}
+
+function calDrop(e, targetDay, evt) {
+  e.preventDefault();
+  e.currentTarget.classList.remove('drag-over');
+  if (!calDragInfo) return;
+
+  const col = document.getElementById('cal-col-' + targetDay);
+  if (!col) { calDragInfo = null; return; }
+
+  const colRect = col.getBoundingClientRect();
+  const dropY = e.clientY - colRect.top - (calDragInfo.offsetY || 0);
+  const newStartMin = Math.min(Math.max(pxToMin(dropY), CAL_START_MIN), CAL_END_MIN - 15);
+
+  const srcBlocks = calCurrent[calDragInfo.day] || [];
+  const idx = srcBlocks.findIndex(b => b.id === calDragInfo.blockId);
+  if (idx === -1) { calDragInfo = null; return; }
+
+  const block = srcBlocks[idx];
+  const oldStartMin = timeToMin(block.startTime);
+  const oldEndMin   = timeToMin(block.endTime);
+
+  // Shift times by the delta
+  const delta = oldStartMin !== null ? newStartMin - oldStartMin : 0;
+
+  block.startTime = fmt12(minutesToHHMM(newStartMin));
+  if (oldEndMin !== null && oldStartMin !== null) {
+    const newEndMin = Math.min(oldEndMin + delta, CAL_END_MIN);
+    block.endTime = fmt12(minutesToHHMM(newEndMin));
+  }
+
+  // Move to new day if different
+  if (calDragInfo.day !== targetDay) {
+    srcBlocks.splice(idx, 1);
+    calCurrent[calDragInfo.day] = srcBlocks;
+    if (!calCurrent[targetDay]) calCurrent[targetDay] = [];
+    calCurrent[targetDay].push(block);
+  }
+
+  save('vf_cal_current', calCurrent);
+  calDragInfo = null;
+  renderCalendar();
+}
+
+function minutesToHHMM(min) {
+  const h = Math.floor(min / 60) % 24;
+  const m = min % 60;
+  return String(h).padStart(2,'0') + ':' + String(m).padStart(2,'0');
+}
+
+// Click on empty column area to add a block pre-filled with that time
+function calColClick(e, day) {
+  if (e.target !== e.currentTarget) return; // only bare column clicks
+  const col = e.currentTarget;
+  const rect = col.getBoundingClientRect();
+  const clickY = e.clientY - rect.top;
+  const clickMin = pxToMin(clickY);
+  addCalBlockAt(day, clickMin);
+}
+
+function addCalBlockAt(day, startMin) {
+  calBlockModal(day, null, startMin);
+}
+
+function syncSessionToCalendar(sourceId, type, label, dateStr, timeStr) {
+  removeCalendarSync(sourceId);
+  if (!dateStr || !isDateInCurrentWeek(dateStr)) { save('vf_cal_current', calCurrent); return; }
+  const d = new Date(dateStr + 'T00:00:00');
+  const dayKey = DAYS[d.getDay()];
+  if (!calCurrent[dayKey]) calCurrent[dayKey] = [];
+  calCurrent[dayKey].push({
+    id: 'b_sync_' + sourceId,
+    text: (type === 'coaching' ? '🎲 Coaching: ' : '🎲 One-Shot: ') + label,
+    type: type,
+    startTime: fmt12(timeStr),
+    endTime: '',
+    details: { sourceId },
+  });
+  save('vf_cal_current', calCurrent);
+  if (typeof renderCalendar === 'function') renderCalendar();
+}
+
+function removeCalendarSync(sourceId) {
+  let changed = false;
+  Object.keys(calCurrent).forEach(day => {
+    const before = (calCurrent[day] || []).length;
+    calCurrent[day] = (calCurrent[day] || []).filter(b => b.id !== 'b_sync_' + sourceId);
+    if (calCurrent[day].length !== before) changed = true;
+  });
+  if (changed) {
+    save('vf_cal_current', calCurrent);
+    if (typeof renderCalendar === 'function') renderCalendar();
+  }
+}
+
+// ── Modal ──
+function calBlockModal(day, existing, prefillStartMin) {
+  const isEdit = !!existing;
+  const details = existing && existing.details ? existing.details : {};
+  const prefillStart = prefillStartMin !== null && prefillStartMin !== undefined
+    ? minutesToHHMM(Math.max(prefillStartMin, CAL_START_MIN))
+    : (existing && existing.startTime ? to24h(existing.startTime) : '');
+
+  const swatchesHTML = CAL_COLORS.map((c, i) => {
+    const selected = existing && existing.customColor === i ? 'selected' : '';
+    return `<div class="color-swatch ${selected}" style="background:${c.color};" title="${c.label}" data-idx="${i}" onclick="calSelectSwatch(this, ${i})"></div>`;
+  }).join('');
+
+  showModal(`
+    <div class="modal">
+      <div class="modal-title">${isEdit ? 'Edit Block \u2014 '+day : 'Add to '+day}</div>
+      <div class="form-group">
+        <label class="form-label">Label</label>
+        <input class="form-input" id="cb-text" placeholder="e.g. Stream night, Commission work..." value="${existing ? esc(existing.text) : ''}">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Type</label>
+        <select class="form-select" id="cb-type" onchange="renderCalBlockDetailFields(this.value, ${JSON.stringify(details).replace(/"/g,'&quot;')})">
+          ${BLOCK_TYPES.map(t=>`<option value="${t}" ${existing&&existing.type===t?'selected':''}>${t.charAt(0).toUpperCase()+t.slice(1)}</option>`).join('')}
+        </select>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Start Time</label>
+          <input class="form-input" id="cb-start" type="time" value="${prefillStart}">
+        </div>
+        <div class="form-group">
+          <label class="form-label">End Time <span style="color:var(--text-ghost);font-size:0.62rem;">(optional)</span></label>
+          <input class="form-input" id="cb-end" type="time" value="${existing&&existing.endTime ? to24h(existing.endTime) : ''}">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Color <span style="color:var(--text-ghost);font-size:0.62rem;">(optional — overrides type color)</span></label>
+        <div class="color-swatches" id="cb-swatches">
+          ${swatchesHTML}
+          <div class="color-swatch" style="background:transparent;border:1px dashed var(--text-ghost);display:flex;align-items:center;justify-content:center;font-size:0.6rem;color:var(--text-ghost);" title="Use type color" onclick="calClearSwatch()">✕</div>
+        </div>
+      </div>
+      <input type="hidden" id="cb-color" value="${existing && existing.customColor !== undefined ? existing.customColor : ''}">
+      <div id="cb-detail-fields"></div>
+      <div class="modal-actions">
+        ${isEdit ? `<button class="btn" style="color:var(--danger);border-color:var(--danger);" onclick="removeCalBlock('${day}','${existing.id}');closeModal()">Delete</button>` : ''}
+        <button class="btn" onclick="closeModal()">Cancel</button>
+        <button class="btn btn-teal" onclick="saveCalBlock('${day}','${existing ? existing.id : ''}')">
+          ${isEdit ? 'Save' : 'Add'}
+        </button>
+      </div>
+    </div>`);
+
+  setTimeout(() => {
+    const typeSelect = document.getElementById('cb-type');
+    renderCalBlockDetailFields(typeSelect.value, details);
+  }, 10);
+}
+
+function calSelectSwatch(el, idx) {
+  document.querySelectorAll('#cb-swatches .color-swatch').forEach(s => s.classList.remove('selected'));
+  el.classList.add('selected');
+  document.getElementById('cb-color').value = idx;
+}
+
+function calClearSwatch() {
+  document.querySelectorAll('#cb-swatches .color-swatch').forEach(s => s.classList.remove('selected'));
+  document.getElementById('cb-color').value = '';
+}
+
 function renderCalBlockDetailFields(type, details) {
   const container = document.getElementById('cb-detail-fields');
   if (!container) return;
   details = details || {};
-
   if (type === 'stream') {
     container.innerHTML = `
       <div class="form-group">
@@ -3535,7 +4009,7 @@ function renderCalBlockDetailFields(type, details) {
       <div class="form-group">
         <label class="form-label">Who's this coaching session with?</label>
         <input class="form-input" id="cb-detail-client" placeholder="Client name" value="${esc(details.client||'')}">
-        <div style="font-size:0.62rem;color:var(--text-ghost);margin-top:3px;">Full session details (payment, topic, notes) live in the Coaching tab — this is just the calendar marker.</div>
+        <div style="font-size:0.62rem;color:var(--text-ghost);margin-top:3px;">Full session details live in the Coaching tab.</div>
       </div>`;
   } else if (type === 'music') {
     container.innerHTML = `
@@ -3543,11 +4017,11 @@ function renderCalBlockDetailFields(type, details) {
         <label class="form-label">What are you working on?</label>
         <input class="form-input" id="cb-detail-project" placeholder="e.g. Commission for Margaret, or original track" value="${esc(details.project||'')}">
       </div>`;
-  } else if (type === 'family') {
+  } else if (type === 'caelos') {
     container.innerHTML = `
       <div class="form-group">
-        <label class="form-label">Notes (optional)</label>
-        <input class="form-input" id="cb-detail-note" placeholder="e.g. Charlie's soccer practice" value="${esc(details.note||'')}">
+        <label class="form-label">Session / Legend</label>
+        <input class="form-input" id="cb-detail-legend" placeholder="e.g. Fall of Jaq'tuun Castle" value="${esc(details.legend||'')}">
       </div>`;
   } else {
     container.innerHTML = `
@@ -3558,12 +4032,12 @@ function renderCalBlockDetailFields(type, details) {
   }
 }
 
-function addCalBlock(day) { calBlockModal(day, null); }
+function addCalBlock(day) { calBlockModal(day, null, null); }
 
 function editCalBlock(day, id) {
   const blocks = calCurrent[day] || [];
   const b = blocks.find(x => x.id === id);
-  if (b) calBlockModal(day, b);
+  if (b) calBlockModal(day, b, null);
 }
 
 function collectCalBlockDetails(type) {
@@ -3576,6 +4050,8 @@ function collectCalBlockDetails(type) {
     return { client: document.getElementById('cb-detail-client')?.value.trim() || '' };
   } else if (type === 'music') {
     return { project: document.getElementById('cb-detail-project')?.value.trim() || '' };
+  } else if (type === 'caelos') {
+    return { legend: document.getElementById('cb-detail-legend')?.value.trim() || '' };
   } else {
     return { note: document.getElementById('cb-detail-note')?.value.trim() || '' };
   }
@@ -3588,14 +4064,8 @@ function saveCalBlock(day, existingId) {
   const endRaw   = document.getElementById('cb-end').value;
   const type = document.getElementById('cb-type').value;
   const details = collectCalBlockDetails(type);
-
-  function fmt12(t) {
-    if (!t) return '';
-    const [h, m] = t.split(':').map(Number);
-    const ampm = h >= 12 ? 'PM' : 'AM';
-    const h12 = h % 12 || 12;
-    return h12 + ':' + String(m).padStart(2,'0') + ' ' + ampm;
-  }
+  const colorRaw = document.getElementById('cb-color').value;
+  const customColor = colorRaw !== '' ? parseInt(colorRaw) : undefined;
 
   if (!calCurrent[day]) calCurrent[day] = [];
 
@@ -3607,16 +4077,20 @@ function saveCalBlock(day, existingId) {
       b.startTime = fmt12(startRaw);
       b.endTime   = fmt12(endRaw);
       b.details = details;
+      if (customColor !== undefined) b.customColor = customColor;
+      else delete b.customColor;
     }
   } else {
-    calCurrent[day].push({
+    const entry = {
       id: 'b_'+Date.now(),
       text,
       type,
       startTime: fmt12(startRaw),
       endTime:   fmt12(endRaw),
       details,
-    });
+    };
+    if (customColor !== undefined) entry.customColor = customColor;
+    calCurrent[day].push(entry);
   }
 
   save('vf_cal_current', calCurrent);
@@ -5777,6 +6251,177 @@ document.getElementById('exp-date').value = new Date().toISOString().split('T')[
 
 // Auto-sync on load, pulls Music + One-Shot + Map + Coaching in one pass
 syncAllFromSheet();
+
+// ═══════════════════════════════════════════════
+// NOW BAR — current/missed event tracker
+// ═══════════════════════════════════════════════
+(function() {
+  // Acknowledgements stored as { [blockId_dayKey]: timestamp }
+  // We key by blockId+day so different days' same-ID synced blocks don't collide
+  let nowAcks = load('vf_now_acks', {});
+  const MISS_GRACE = 15; // minutes after start before flagging missed
+
+  function nowKey(day, id) { return day + '__' + id; }
+
+  function todayDayKey() {
+    return DAYS[new Date().getDay()];
+  }
+
+  function nowMinutes() {
+    const n = new Date();
+    return n.getHours() * 60 + n.getMinutes();
+  }
+
+  // Returns all blocks for today sorted by startTime
+  function getTodayBlocks() {
+    const day = todayDayKey();
+    const blocks = (calCurrent[day] || []).filter(b => timeToMin(b.startTime) !== null);
+    return { day, blocks: blocks.slice().sort((a,b) => timeToMin(a.startTime) - timeToMin(b.startTime)) };
+  }
+
+  // Determine current block: started but not ended (or single-time within 60min window)
+  function getCurrentBlock(blocks, nowMin) {
+    for (const b of blocks) {
+      const s = timeToMin(b.startTime);
+      const e = b.endTime ? timeToMin(b.endTime) : null;
+      if (e !== null) {
+        // has duration — active between start and end
+        // handle overnight end times (e.g. 1am = 60min, but start was 1100)
+        const eAdj = e < s ? e + 24*60 : e;
+        const nowAdj = nowMin < s && eAdj > 24*60 ? nowMin + 24*60 : nowMin;
+        if (nowAdj >= s && nowAdj < eAdj) return b;
+      } else {
+        // point-in-time: show as current for 60 min window
+        if (nowMin >= s && nowMin < s + 60) return b;
+      }
+    }
+    return null;
+  }
+
+  // Determine missed blocks: started >15 min ago, not ended, not acknowledged
+  function getMissedBlocks(blocks, nowMin, day) {
+    const missed = [];
+    for (const b of blocks) {
+      const s = timeToMin(b.startTime);
+      const e = b.endTime ? timeToMin(b.endTime) : null;
+      const eAdj = e !== null ? (e < s ? e + 24*60 : e) : s + 60;
+      const nowAdj = nowMin;
+      // Block is in the past (started + grace, not yet ended)
+      if (nowAdj >= s + MISS_GRACE && nowAdj < eAdj) {
+        const key = nowKey(day, b.id);
+        if (!nowAcks[key]) missed.push(b);
+      }
+    }
+    return missed;
+  }
+
+  function fmt12Display(t) {
+    if (!t) return '';
+    const min = timeToMin(t);
+    if (min === null) return t;
+    const h = Math.floor(min / 60) % 24;
+    const m = min % 60;
+    const ampm = h >= 12 ? 'PM' : 'AM';
+    const h12 = h % 12 || 12;
+    return h12 + ':' + String(m).padStart(2,'0') + ' ' + ampm;
+  }
+
+  function ackCurrent(day, id) {
+    nowAcks[nowKey(day, id)] = Date.now();
+    save('vf_now_acks', nowAcks);
+    renderNowBar();
+  }
+
+  function ackMissed(day, id) {
+    nowAcks[nowKey(day, id)] = Date.now();
+    save('vf_now_acks', nowAcks);
+    renderNowBar();
+  }
+
+  function isAcked(day, id) {
+    return !!nowAcks[nowKey(day, id)];
+  }
+
+  // Prune acks older than 2 days to avoid unbounded growth
+  function pruneAcks() {
+    const cutoff = Date.now() - 2 * 24 * 60 * 60 * 1000;
+    Object.keys(nowAcks).forEach(k => { if (nowAcks[k] < cutoff) delete nowAcks[k]; });
+    save('vf_now_acks', nowAcks);
+  }
+
+  window.renderNowBar = function() {
+    const inner = document.getElementById('now-bar-inner');
+    if (!inner) return;
+
+    const nowMin = nowMinutes();
+    const { day, blocks } = getTodayBlocks();
+    const current = getCurrentBlock(blocks, nowMin);
+    const missed  = getMissedBlocks(blocks, nowMin, day);
+
+    // Build pieces
+    let html = '';
+
+    if (missed.length > 0) {
+      missed.forEach((b, i) => {
+        const isSolo = !current && i === 0 && missed.length === 1;
+        const timeLabel = fmt12Display(b.startTime) + (b.endTime ? ' \u2013 ' + fmt12Display(b.endTime) : '');
+        html += `<div class="now-missed${isSolo ? ' solo' : ''}">
+          <span class="now-missed-label">Missed</span>
+          <span class="now-missed-text">${b.text}</span>
+          <span class="now-missed-time">${timeLabel}</span>
+          <button class="now-missed-ack" onclick="window._nowAckMissed('${day}','${b.id}')">Got it ✓</button>
+        </div>`;
+      });
+    }
+
+    if (current) {
+      const acked = isAcked(day, current.id);
+      const timeLabel = fmt12Display(current.startTime) + (current.endTime ? ' \u2013 ' + fmt12Display(current.endTime) : '');
+      const hasMissed = missed.length > 0;
+      html += `<div class="now-current${hasMissed ? '' : ' solo'}">
+        <span class="now-current-label">Currently</span>
+        <span class="now-current-text">${current.text}</span>
+        <span class="now-current-time">${timeLabel}</span>
+        <button class="now-ack-btn${acked ? ' checked' : ''}" onclick="window._nowAckCurrent('${day}','${current.id}')">
+          ${acked ? 'On it' : 'On it?'}
+        </button>
+      </div>`;
+    }
+
+    if (!current && missed.length === 0) {
+      // Find next upcoming block
+      const next = blocks.find(b => timeToMin(b.startTime) > nowMin);
+      const nextLabel = next ? 'Next: ' + next.text + ' at ' + fmt12Display(next.startTime) : 'Nothing else scheduled today.';
+      html = `<div class="now-idle">
+        <span class="now-idle-label">Now</span>
+        <span class="now-idle-text">${nextLabel}</span>
+      </div>`;
+    }
+
+    inner.innerHTML = html;
+  };
+
+  // Expose ack handlers to inline onclick
+  window._nowAckCurrent = function(day, id) { ackCurrent(day, id); };
+  window._nowAckMissed  = function(day, id)  { ackMissed(day, id); };
+
+  // Rerender whenever calCurrent changes (patch save to hook in)
+  const _origSave = window.save || null;
+  // Tick every 30 seconds
+  pruneAcks();
+  renderNowBar();
+  setInterval(() => {
+    pruneAcks();
+    renderNowBar();
+  }, 30000);
+
+  // Also re-render when calendar is re-rendered (blocks may have changed)
+  const _origRenderCalendar = window.renderCalendar;
+  window.renderCalendar = function() {
+    _origRenderCalendar && _origRenderCalendar();
+    renderNowBar();
+  };
+})();
 
 </script>
 </body>
