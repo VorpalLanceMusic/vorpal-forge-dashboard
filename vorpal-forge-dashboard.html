@@ -816,8 +816,6 @@
 
   .cal-block {
     position: absolute;
-    left: 2px;
-    right: 2px;
     padding: 3px 5px;
     border-radius: 4px;
     font-size: 0.6rem;
@@ -3817,21 +3815,22 @@ function renderCalendar() {
     });
 
     // ── Render blocks with computed left/width ──
-    const GAP = 2; // px gap between side-by-side blocks
+    const GAP = 2;
     const blocksHTML = placed.map(({ b, top, height }, i) => {
       const totalCols = colCounts[i];
       const slot      = slots[i];
-      const pct       = 100 / totalCols;
-      const leftPct   = slot * pct;
-      // small inset so borders don't touch column edge
-      const leftStyle  = `calc(${leftPct}% + ${GAP}px)`;
-      const widthStyle = `calc(${pct}% - ${GAP * 2}px)`;
+
+      // We'll compute actual pixel values at render time using inline style with %
+      // but expressed clearly so there's no CSS conflict
+      const leftPct  = (slot / totalCols) * 100;
+      const widthPct = (1 / totalCols) * 100;
 
       const timeLabel = b.startTime + (b.endTime ? ' \u2013 ' + b.endTime : '');
       const customStyle = getBlockStyle(b);
       const cls = getBlockClass(b);
 
-      return `<div class="${cls}" style="top:${top}px;height:${height}px;left:${leftStyle};width:${widthStyle};right:auto;${customStyle}"
+      return `<div class="${cls}"
+          style="top:${top}px;height:${height}px;left:calc(${leftPct.toFixed(3)}% + ${GAP}px);width:calc(${widthPct.toFixed(3)}% - ${GAP * 2}px);${customStyle}"
           draggable="true"
           ondragstart="calDragStart(event,'${key}','${esc(b.id)}')"
           ondblclick="event.stopPropagation();editCalBlock('${key}','${esc(b.id)}')">
