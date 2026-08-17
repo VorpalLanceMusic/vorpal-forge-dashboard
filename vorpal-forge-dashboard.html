@@ -2763,6 +2763,29 @@ let deals           = load('vf_deals',            []);
 let budExpenses     = load('vf_bud_expenses',     []);
 let artGoalArchive  = load('vf_art_goal_archive', []);
 let dismissedAlerts = load('vf_dismissed_alerts', {});
+
+// Budget constants -- must be declared before any render calls
+const SOURCE_LABELS = {
+  music_commission: 'Music Commissions',
+  map_commission:   'Map Commissions',
+  coaching:         'Coaching',
+  caelos_legends:   'Caelos Legends',
+  patreon:          'Patreon',
+  merch:            'Merch',
+  other:            'Other',
+};
+const SOURCE_COLORS = {
+  music_commission: '#3ecfcf',
+  map_commission:   '#d4af37',
+  coaching:         '#7c8cf8',
+  caelos_legends:   '#f08c55',
+  patreon:          '#f96854',
+  merch:            '#55cc88',
+  other:            '#888',
+};
+const BUCKET_KEYS   = ['taxes', 'business', 'family', 'personal'];
+const BUCKET_LABELS = { taxes: 'Taxes', business: 'Business', family: 'Family', personal: 'Personal' };
+const BUCKET_COLORS = { taxes: '#e05555', business: '#3ecfcf', family: '#d4af37', personal: '#7c8cf8' };
 let currentContentFilter = 'all';
 let calDefault = load('vf_cal_default', {});
 let calCurrent = load('vf_cal_current', {});
@@ -4788,15 +4811,15 @@ function saveAsDefault() {
 // EXPENSES
 // ═══════════════════════════════════════════════
 function renderExpenses() {
-  // These DOM elements no longer exist (panel moved to Budget tab).
-  // Keep function alive for all the autoLog calls that invoke it -- just update budget glance instead.
-  updateBudgetGlance();
-  // If budget tab is open, refresh it too
+  // DOM elements moved to Budget tab. Guard against budget functions not yet defined.
+  if (typeof updateBudgetGlance === 'function') {
+    updateBudgetGlance();
+  }
   const budPage = document.getElementById('page-budget');
   if (budPage && budPage.classList.contains('active')) {
-    renderBudExpenses();
-    renderSourceBars();
-    updateOverview();
+    if (typeof renderBudExpenses === 'function') renderBudExpenses();
+    if (typeof renderSourceBars === 'function') renderSourceBars();
+    if (typeof updateOverview === 'function') updateOverview();
   }
 }
 
@@ -7092,26 +7115,6 @@ function spawnSparkles(x, y, count = 6) {
 // BUDGET CALCULATIONS
 // ═══════════════════════════════════════════════
 
-const SOURCE_LABELS = {
-  music_commission: 'Music Commissions',
-  map_commission:   'Map Commissions',
-  coaching:         'Coaching',
-  caelos_legends:   'Caelos Legends',
-  patreon:          'Patreon',
-  merch:            'Merch',
-  other:            'Other',
-};
-
-const SOURCE_COLORS = {
-  music_commission: '#3ecfcf',
-  map_commission:   '#d4af37',
-  coaching:         '#7c8cf8',
-  caelos_legends:   '#f08c55',
-  patreon:          '#f96854',
-  merch:            '#55cc88',
-  other:            '#888',
-};
-
 function getYearExpenses() {
   const yr = new Date().getFullYear();
   return budExpenses.filter(e => new Date(e.date).getFullYear() === yr);
@@ -7162,9 +7165,7 @@ function getBizNetYTD() {
 // AMP KNOBS
 // ═══════════════════════════════════════════════
 
-const BUCKET_KEYS   = ['taxes', 'business', 'family', 'personal'];
-const BUCKET_LABELS = { taxes: 'Taxes', business: 'Business', family: 'Family', personal: 'Personal' };
-const BUCKET_COLORS = { taxes: '#e05555', business: '#3ecfcf', family: '#d4af37', personal: '#7c8cf8' };
+
 
 function snapHalf(v) {
   return Math.round(v * 2) / 2;
