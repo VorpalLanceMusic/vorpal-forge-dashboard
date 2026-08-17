@@ -1755,20 +1755,33 @@
 }
 .amp-knobs-row {
   display: flex;
-  justify-content: space-around;
-  gap: 24px;
+  justify-content: stretch;
+  gap: 10px;
   flex-wrap: nowrap;
-  align-items: flex-start;
+  align-items: stretch;
 }
 .amp-knob-group {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   align-items: center;
-  gap: 8px;
+  gap: 16px;
   flex: 1;
+  background: rgba(255,255,255,0.025);
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 8px;
+  padding: 12px 16px;
+  position: relative;
+  overflow: hidden;
+}
+.amp-knob-info {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  flex: 1;
+  min-width: 0;
 }
 .amp-knob-label {
-  font-size: 0.7rem;
+  font-size: 0.6rem;
   text-transform: uppercase;
   letter-spacing: 0.14em;
   color: var(--text-ghost);
@@ -1777,34 +1790,32 @@
 /* Knob SVG wrapper */
 .knob-svg-wrap {
   position: relative;
-  width: 96px;
-  height: 96px;
+  width: 110px;
+  height: 110px;
   cursor: ns-resize;
   user-select: none;
+  flex-shrink: 0;
 }
-.knob-svg-wrap svg { width: 96px; height: 96px; display: block; }
+.knob-svg-wrap svg { width: 110px; height: 110px; display: block; }
 .knob-value-display {
-  font-size: 1.1rem;
+  font-size: 1.8rem;
   font-weight: 700;
-  color: var(--teal);
-  text-align: center;
-  min-width: 60px;
+  line-height: 1;
+  text-align: left;
 }
 .knob-dollar-display {
   font-size: 0.72rem;
   color: var(--text-ghost);
-  text-align: center;
-  min-width: 80px;
+  text-align: left;
 }
 .knob-input-field {
-  width: 64px;
+  width: 80px;
   background: transparent;
   border: none;
   border-bottom: 1px solid var(--border);
-  color: var(--teal);
-  font-size: 1rem;
+  font-size: 1.6rem;
   font-weight: 700;
-  text-align: center;
+  text-align: left;
   outline: none;
   display: none;
 }
@@ -1893,15 +1904,37 @@
 .ytd-net-val.loss { color: var(--danger); }
 
 /* Goals panel */
+
+/* Goal drag-to-reorder */
 .goal-item {
   background: rgba(255,255,255,0.02);
   border: 1px solid var(--border);
   border-radius: 6px;
   padding: 10px;
   margin-bottom: 8px;
+  cursor: grab;
+  transition: opacity 0.15s, box-shadow 0.15s;
+  position: relative;
 }
 .goal-item:last-child { margin-bottom: 0; }
+.goal-item.goal-dragging { opacity: 0.4; cursor: grabbing; }
+.goal-item.goal-drag-over { box-shadow: 0 -2px 0 var(--teal); }
+.goal-drag-handle {
+  position: absolute;
+  left: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-ghost);
+  font-size: 0.7rem;
+  cursor: grab;
+  opacity: 0.4;
+  line-height: 1;
+}
+.goal-drag-handle:hover { opacity: 0.9; }
+.goal-item-inner { padding-left: 14px; }
 .goal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+.goal-header-actions { display: flex; gap: 4px; align-items: center; }
+
 .goal-name { font-size: 0.72rem; font-weight: 600; color: var(--text); }
 .goal-badge {
   font-size: 0.55rem;
@@ -7276,19 +7309,21 @@ function renderKnobs() {
       ? `$${Math.max(0, balance - budExpenses.reduce((s,e)=>s+(e.amount||0),0)).toFixed(0)} net`
       : `$${balance.toFixed(0)}`;
     return `
-    <div class="amp-knob-group">
-      <div class="amp-knob-label">${BUCKET_LABELS[key]}</div>
+    <div class="amp-knob-group" style="border-left:3px solid ${BUCKET_COLORS[key]};">
       <div class="knob-svg-wrap" data-key="${key}" data-pct="${pct}"
            onmousedown="startKnobDrag(event,'${key}')"
            ondblclick="activateKnobInput('${key}')">
         ${renderKnobSVG(pct, BUCKET_COLORS[key])}
       </div>
-      <div class="knob-value-display" id="knob-val-${key}">${pct}%</div>
-      <input class="knob-input-field" id="knob-input-${key}" type="number" step="0.5" min="0" max="100"
-             value="${pct}"
-             onblur="commitKnobInput('${key}')"
-             onkeydown="if(event.key==='Enter')commitKnobInput('${key}')">
-      <div class="knob-dollar-display" id="knob-dol-${key}">${displayDollars}</div>
+      <div class="amp-knob-info">
+        <div class="amp-knob-label">${BUCKET_LABELS[key]}</div>
+        <div class="knob-value-display" id="knob-val-${key}" style="color:${BUCKET_COLORS[key]};">${pct}%</div>
+        <input class="knob-input-field" id="knob-input-${key}" type="number" step="0.5" min="0" max="100"
+               value="${pct}" style="color:${BUCKET_COLORS[key]};"
+               onblur="commitKnobInput('${key}')"
+               onkeydown="if(event.key==='Enter')commitKnobInput('${key}')">
+        <div class="knob-dollar-display" id="knob-dol-${key}">${displayDollars}</div>
+      </div>
     </div>`;
   }).join('');
 
@@ -7648,6 +7683,9 @@ function exportBudgetTaxData() {
 // SAVINGS GOALS
 // ═══════════════════════════════════════════════
 
+// Goal drag state
+let goalDragIdx = null;
+
 function renderGoals() {
   const list = document.getElementById('goals-list');
   const empty = document.getElementById('goals-empty');
@@ -7658,32 +7696,157 @@ function renderGoals() {
     return;
   }
   if (empty) empty.style.display = 'none';
-  list.innerHTML = savingsGoals.map(g => {
-    const pct = Math.min(100, g.target > 0 ? (g.allocated / g.target) * 100 : 0);
+  list.innerHTML = savingsGoals.map((g, idx) => {
+    const pct   = Math.min(100, g.target > 0 ? ((g.allocated||0) / g.target) * 100 : 0);
+    const color = g.color || null;
+    const bgStyle = color ? `background:${color}18;border-color:${color}44;` : '';
+    const tint  = color || 'var(--teal)';
     return `
-    <div class="goal-item">
-      <div class="goal-header">
-        <span class="goal-name">${esc(g.name)}</span>
-        <span class="goal-badge">${esc(g.bucket)}</span>
-      </div>
-      <div class="goal-amounts">
-        <span style="color:var(--teal);">$${(g.allocated||0).toFixed(2)} saved</span>
-        <span>of $${(g.target||0).toFixed(2)}</span>
-      </div>
-      <div class="goal-thermometer">
-        <div class="goal-thermo-fill" style="width:${pct}%;"></div>
-      </div>
-      <div class="goal-actions">
-        <input class="goal-alloc-input" id="galloc-${g.id}" type="number" step="0.01" placeholder="$0.00" min="0">
-        <button class="btn btn-teal btn-sm" style="font-size:0.6rem;padding:2px 9px;" onclick="allocateToGoal('${g.id}',event)">Allocate</button>
-        <button class="btn btn-sm" style="font-size:0.6rem;padding:2px 7px;" onclick="deleteGoal('${g.id}')">✕</button>
+    <div class="goal-item" style="${bgStyle}"
+         draggable="true"
+         ondragstart="goalDragStart(event,${idx})"
+         ondragover="goalDragOver(event,${idx})"
+         ondrop="goalDrop(event,${idx})"
+         ondragleave="goalDragLeave(event)"
+         ondragend="goalDragEnd(event)">
+      <div class="goal-drag-handle">⠿</div>
+      <div class="goal-item-inner">
+        <div class="goal-header">
+          <span class="goal-name" style="color:${tint};">${esc(g.name)}</span>
+          <div class="goal-header-actions">
+            <span class="goal-badge" style="background:${tint}22;color:${tint};">${esc(g.bucket)}</span>
+            <button class="btn btn-sm" style="font-size:0.55rem;padding:1px 6px;" onclick="openEditGoal('${g.id}')">✎</button>
+            <button class="btn btn-sm" style="font-size:0.55rem;padding:1px 6px;color:var(--danger);border-color:var(--danger);" onclick="deleteGoal('${g.id}')">✕</button>
+          </div>
+        </div>
+        <div class="goal-amounts">
+          <span style="color:${tint};">$${(g.allocated||0).toFixed(2)} saved</span>
+          <span style="color:var(--text-ghost);">of $${(g.target||0).toFixed(2)}</span>
+        </div>
+        <div class="goal-thermometer">
+          <div class="goal-thermo-fill" style="width:${pct}%;background:linear-gradient(90deg,${tint},${tint}bb);"></div>
+        </div>
+        <div class="goal-actions">
+          <input class="goal-alloc-input" id="galloc-${g.id}" type="number" step="0.01" placeholder="$0.00" min="0">
+          <button class="btn btn-sm" style="font-size:0.6rem;padding:2px 9px;border-color:${tint};color:${tint};" onclick="allocateToGoal('${g.id}',event)">Allocate</button>
+        </div>
       </div>
     </div>`;
   }).join('');
   updateOverview();
 }
 
+// Drag handlers
+function goalDragStart(e, idx) {
+  goalDragIdx = idx;
+  setTimeout(() => e.currentTarget.classList.add('goal-dragging'), 0);
+  e.dataTransfer.effectAllowed = 'move';
+}
+function goalDragOver(e, idx) {
+  e.preventDefault();
+  e.currentTarget.classList.add('goal-drag-over');
+}
+function goalDragLeave(e) {
+  e.currentTarget.classList.remove('goal-drag-over');
+}
+function goalDragEnd(e) {
+  e.currentTarget.classList.remove('goal-dragging');
+  document.querySelectorAll('.goal-item').forEach(el => el.classList.remove('goal-drag-over'));
+  goalDragIdx = null;
+}
+function goalDrop(e, targetIdx) {
+  e.preventDefault();
+  e.currentTarget.classList.remove('goal-drag-over');
+  if (goalDragIdx === null || goalDragIdx === targetIdx) return;
+  const moved = savingsGoals.splice(goalDragIdx, 1)[0];
+  savingsGoals.splice(targetIdx, 0, moved);
+  save('vf_savings_goals', savingsGoals);
+  renderGoals();
+}
+
+// Art goal drag state
+let artGoalDragIdx = null;
+function artGoalDragStart(e, idx) { artGoalDragIdx = idx; setTimeout(() => e.currentTarget.classList.add('goal-dragging'), 0); e.dataTransfer.effectAllowed = 'move'; }
+function artGoalDragOver(e, idx) { e.preventDefault(); e.currentTarget.classList.add('goal-drag-over'); }
+function artGoalDragLeave(e) { e.currentTarget.classList.remove('goal-drag-over'); }
+function artGoalDragEnd(e) { e.currentTarget.classList.remove('goal-dragging'); document.querySelectorAll('.art-goal-item').forEach(el => el.classList.remove('goal-drag-over')); artGoalDragIdx = null; }
+function artGoalDrop(e, targetIdx) {
+  e.preventDefault();
+  e.currentTarget.classList.remove('goal-drag-over');
+  if (artGoalDragIdx === null || artGoalDragIdx === targetIdx) return;
+  const moved = artGoals.splice(artGoalDragIdx, 1)[0];
+  artGoals.splice(targetIdx, 0, moved);
+  save('vf_art_goals', artGoals);
+  renderArtGoals();
+}
+
+function openEditGoal(id) {
+  const g = savingsGoals.find(x => x.id === id);
+  if (!g) return;
+  const PALETTE = ['#3ecfcf','#d4af37','#7c8cf8','#f08c55','#f96854','#55cc88','#e05555','#c084fc','#38bdf8','#fb923c','#a3e635','#f472b6'];
+  showModal(`
+    <div class="modal bud-modal">
+      <div class="modal-title">Edit Goal</div>
+      <div class="bud-form-row">
+        <div class="bud-form-group" style="flex:2;">
+          <label class="bud-form-label">Goal Name</label>
+          <input class="bud-form-input" id="eg-name" value="${esc(g.name)}" autofocus>
+        </div>
+      </div>
+      <div class="bud-form-row">
+        <div class="bud-form-group">
+          <label class="bud-form-label">Target Amount ($)</label>
+          <input class="bud-form-input" id="eg-target" type="number" step="0.01" value="${g.target||0}">
+        </div>
+        <div class="bud-form-group">
+          <label class="bud-form-label">Funding Bucket</label>
+          <select class="bud-form-input" id="eg-bucket">
+            ${['Business','Personal','Family','Taxes'].map(b => `<option value="${b}" ${g.bucket===b?'selected':''}>${b}</option>`).join('')}
+          </select>
+        </div>
+      </div>
+      <div class="bud-form-row">
+        <div class="bud-form-group" style="flex:2;">
+          <label class="bud-form-label">Card Color (optional)</label>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:4px;">
+            <div class="eg-swatch" onclick="selectGoalColor(null,this)"
+                 style="width:22px;height:22px;border-radius:50%;background:#333;border:2px solid ${!g.color?'var(--teal)':'#333'};cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:0.6rem;color:#888;">✕</div>
+            ${PALETTE.map(c => `
+              <div class="eg-swatch" onclick="selectGoalColor('${c}',this)"
+                   style="width:22px;height:22px;border-radius:50%;background:${c};border:2px solid ${g.color===c?'white':'transparent'};cursor:pointer;"></div>`).join('')}
+          </div>
+          <input type="hidden" id="eg-color" value="${g.color||''}">
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-sm" onclick="closeModal()">Cancel</button>
+        <button class="btn btn-teal" onclick="saveEditGoal('${id}')">Save Changes</button>
+      </div>
+    </div>`);
+}
+
+function selectGoalColor(color, el) {
+  document.getElementById('eg-color').value = color || '';
+  document.querySelectorAll('.eg-swatch').forEach(s => s.style.borderColor = 'transparent');
+  el.style.borderColor = 'white';
+}
+
+function saveEditGoal(id) {
+  const g = savingsGoals.find(x => x.id === id);
+  if (!g) return;
+  g.name   = document.getElementById('eg-name').value.trim() || g.name;
+  g.target = parseFloat(document.getElementById('eg-target').value) || g.target;
+  g.bucket = document.getElementById('eg-bucket').value;
+  const color = document.getElementById('eg-color').value;
+  g.color = color || null;
+  save('vf_savings_goals', savingsGoals);
+  closeModal();
+  renderGoals();
+  spawnSparkles(window.innerWidth/2, window.innerHeight/2, 4);
+}
+
 function openAddGoal() {
+  const PALETTE = ['#3ecfcf','#d4af37','#7c8cf8','#f08c55','#f96854','#55cc88','#e05555','#c084fc','#38bdf8','#fb923c','#a3e635','#f472b6'];
   showModal(`
     <div class="modal bud-modal">
       <div class="modal-title">New Savings Goal</div>
@@ -7707,6 +7870,17 @@ function openAddGoal() {
           </select>
         </div>
       </div>
+      <div class="bud-form-row">
+        <div class="bud-form-group" style="flex:2;">
+          <label class="bud-form-label">Card Color (optional)</label>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:4px;">
+            <div class="eg-swatch" onclick="selectGoalColor(null,this)"
+                 style="width:22px;height:22px;border-radius:50%;background:#333;border:2px solid white;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:0.6rem;color:#888;">✕</div>
+            ${PALETTE.map(c => '<div class=\"eg-swatch\" onclick=\"selectGoalColor(\'' + c + '\',this)\" style=\"width:22px;height:22px;border-radius:50%;background:' + c + ';border:2px solid transparent;cursor:pointer;\"></div>').join('')}
+          </div>
+          <input type="hidden" id="goal-color-in" value="">
+        </div>
+      </div>
       <div class="modal-actions">
         <button class="btn btn-sm" onclick="closeModal()">Cancel</button>
         <button class="btn btn-teal" onclick="saveGoal()">Create Goal</button>
@@ -7718,8 +7892,9 @@ function saveGoal() {
   const name   = document.getElementById('goal-name-in').value.trim();
   const target = parseFloat(document.getElementById('goal-target-in').value);
   const bucket = document.getElementById('goal-bucket-in').value;
+  const color  = document.getElementById('goal-color-in')?.value || null;
   if (!name || isNaN(target)) return;
-  savingsGoals.push({ id: 'goal_' + Date.now(), name, target, bucket, allocated: 0 });
+  savingsGoals.push({ id: 'goal_' + Date.now(), name, target, bucket, allocated: 0, color: color || null });
   save('vf_savings_goals', savingsGoals);
   closeModal();
   renderGoals();
@@ -7773,7 +7948,7 @@ function renderArtGoals() {
   const list  = document.getElementById('art-goals-list');
   const empty = document.getElementById('art-goals-empty');
   const runway = document.getElementById('art-runway-display');
-  if (runway) runway.textContent = '$' + getArtRunway().toFixed(0);
+  if (runway) runway.textContent = '$' + (getBucketBalance('business') * 0.2).toFixed(0);
   if (!list) return;
   if (!artGoals.length) {
     list.innerHTML = '';
@@ -7781,31 +7956,46 @@ function renderArtGoals() {
     return;
   }
   if (empty) empty.style.display = 'none';
-  list.innerHTML = artGoals.map(g => {
+  list.innerHTML = artGoals.map((g, idx) => {
     const totalPaid = g.paid || 0;
     const pct = g.target > 0 ? Math.min(100, (totalPaid / g.target) * 100) : 0;
     const remaining = Math.max(0, (g.target || 0) - totalPaid);
+    const color = g.color || null;
+    const bgStyle = color ? `background:${color}12;border-color:${color}33;` : '';
+    const tint = color || 'var(--gold)';
     return `
-    <div class="art-goal-item">
-      <div class="art-goal-header">
-        <div>
-          <div class="art-goal-name">${esc(g.name)}</div>
-          ${g.note ? `<div class="art-goal-note">${esc(g.note)}</div>` : ''}
+    <div class="art-goal-item" style="${bgStyle};cursor:grab;"
+         draggable="true"
+         ondragstart="artGoalDragStart(event,${idx})"
+         ondragover="artGoalDragOver(event,${idx})"
+         ondrop="artGoalDrop(event,${idx})"
+         ondragleave="artGoalDragLeave(event)"
+         ondragend="artGoalDragEnd(event)">
+      <div class="goal-drag-handle" style="color:${tint}44;">⠿</div>
+      <div style="padding-left:14px;">
+        <div class="art-goal-header">
+          <div>
+            <div class="art-goal-name" style="color:${tint};">${esc(g.name)}</div>
+            ${g.note ? `<div class="art-goal-note">${esc(g.note)}</div>` : ''}
+          </div>
+          <div style="display:flex;gap:4px;">
+            <button class="btn btn-sm" style="font-size:0.55rem;padding:1px 6px;" onclick="openEditArtGoal('${g.id}')">✎</button>
+            <button class="btn btn-sm" style="font-size:0.55rem;padding:1px 6px;color:var(--danger);border-color:var(--danger);" onclick="deleteArtGoal('${g.id}')">✕</button>
+          </div>
         </div>
-        <button class="btn btn-sm" style="font-size:0.55rem;padding:2px 6px;" onclick="deleteArtGoal('${g.id}')">✕</button>
-      </div>
-      <div class="art-goal-amounts">
-        <span class="art-goal-paid-amt">$${totalPaid.toFixed(2)} paid</span>
-        <span class="art-goal-remain-amt">$${remaining.toFixed(2)} remaining</span>
-        <span style="color:var(--text-ghost);">of $${(g.target||0).toFixed(2)}</span>
-      </div>
-      <div class="art-goal-thermo">
-        <div class="art-goal-fill" style="width:${pct}%;"></div>
-      </div>
-      <div class="art-goal-actions">
-        <input class="goal-alloc-input" id="aalloc-${g.id}" type="number" step="0.01" placeholder="$0.00" min="0" style="max-width:80px;">
-        <button class="btn btn-sm" style="font-size:0.6rem;padding:2px 8px;border-color:var(--gold);color:var(--gold);" onclick="payArtGoal('${g.id}',event)">Mark Paid</button>
-        ${totalPaid >= (g.target||0) && g.target > 0 ? `<button class="btn btn-teal btn-sm" style="font-size:0.6rem;padding:2px 8px;" onclick="archiveArtGoal('${g.id}',event)">Archive</button>` : ''}
+        <div class="art-goal-amounts">
+          <span class="art-goal-paid-amt" style="color:${tint};">$${totalPaid.toFixed(2)} paid</span>
+          <span class="art-goal-remain-amt">$${remaining.toFixed(2)} remaining</span>
+          <span style="color:var(--text-ghost);">of $${(g.target||0).toFixed(2)}</span>
+        </div>
+        <div class="art-goal-thermo">
+          <div class="art-goal-fill" style="width:${pct}%;background:linear-gradient(90deg,${tint},${tint}99);"></div>
+        </div>
+        <div class="art-goal-actions">
+          <input class="goal-alloc-input" id="aalloc-${g.id}" type="number" step="0.01" placeholder="$0.00" min="0" style="max-width:80px;">
+          <button class="btn btn-sm" style="font-size:0.6rem;padding:2px 8px;border-color:${tint};color:${tint};" onclick="payArtGoal('${g.id}',event)">Mark Paid</button>
+          ${totalPaid >= (g.target||0) && g.target > 0 ? `<button class="btn btn-teal btn-sm" style="font-size:0.6rem;padding:2px 8px;" onclick="archiveArtGoal('${g.id}',event)">Archive</button>` : ''}
+        </div>
       </div>
     </div>`;
   }).join('');
@@ -7838,6 +8028,64 @@ function openAddArtGoal() {
         <button class="btn btn-sm" style="border-color:var(--gold);color:var(--gold);" onclick="saveArtGoal()">Create Art Goal</button>
       </div>
     </div>`);
+}
+
+
+function openEditArtGoal(id) {
+  const g = artGoals.find(x => x.id === id);
+  if (!g) return;
+  const PALETTE = ['#3ecfcf','#d4af37','#7c8cf8','#f08c55','#f96854','#55cc88','#e05555','#c084fc','#38bdf8','#fb923c','#a3e635','#f472b6'];
+  showModal(`
+    <div class="modal bud-modal">
+      <div class="modal-title">Edit Art Goal</div>
+      <div class="bud-form-row">
+        <div class="bud-form-group" style="flex:2;">
+          <label class="bud-form-label">Project / Event</label>
+          <input class="bud-form-input" id="eag-name" value="${esc(g.name)}" autofocus>
+        </div>
+      </div>
+      <div class="bud-form-row">
+        <div class="bud-form-group">
+          <label class="bud-form-label">Budget Target ($)</label>
+          <input class="bud-form-input" id="eag-target" type="number" step="0.01" value="${g.target||0}">
+        </div>
+      </div>
+      <div class="bud-form-row">
+        <div class="bud-form-group" style="flex:2;">
+          <label class="bud-form-label">Notes / Context</label>
+          <input class="bud-form-input" id="eag-note" value="${esc(g.note||'')}">
+        </div>
+      </div>
+      <div class="bud-form-row">
+        <div class="bud-form-group" style="flex:2;">
+          <label class="bud-form-label">Card Color (optional)</label>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:4px;">
+            <div class="eg-swatch" onclick="selectGoalColor(null,this)"
+                 style="width:22px;height:22px;border-radius:50%;background:#333;border:2px solid ${!g.color?'white':'transparent'};cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:0.6rem;color:#888;">✕</div>
+            ${PALETTE.map(c => `<div class="eg-swatch" onclick="selectGoalColor('${c}',this)"
+                 style="width:22px;height:22px;border-radius:50%;background:${c};border:2px solid ${g.color===c?'white':'transparent'};cursor:pointer;"></div>`).join('')}
+          </div>
+          <input type="hidden" id="eg-color" value="${g.color||''}">
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-sm" onclick="closeModal()">Cancel</button>
+        <button class="btn btn-sm" style="border-color:var(--gold);color:var(--gold);" onclick="saveEditArtGoal('${id}')">Save Changes</button>
+      </div>
+    </div>`);
+}
+
+function saveEditArtGoal(id) {
+  const g = artGoals.find(x => x.id === id);
+  if (!g) return;
+  g.name   = document.getElementById('eag-name').value.trim() || g.name;
+  g.target = parseFloat(document.getElementById('eag-target').value) || g.target;
+  g.note   = document.getElementById('eag-note').value.trim();
+  const color = document.getElementById('eg-color').value;
+  g.color = color || null;
+  save('vf_art_goals', artGoals);
+  closeModal();
+  renderArtGoals();
 }
 
 function saveArtGoal() {
