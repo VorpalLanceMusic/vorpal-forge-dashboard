@@ -7280,11 +7280,13 @@ function getCommittedAmount() {
 }
 
 function getAvailableToSpend() {
-  // Business bucket running balance, minus subscriptions accrued, minus committed funds
-  const bizBalance  = getBucketBalance('business');
+  // Business bucket running balance, minus expenses logged, minus committed funds, minus one month of subscriptions
+  // Subscriptions subtract one month's worth -- represents the ongoing monthly drain on the bucket
+  const bizBalance    = getBucketBalance('business');
   const totalExpenses = budExpenses.reduce((s, e) => s + (e.amount || 0), 0);
-  const committed   = getCommittedAmount();
-  return Math.max(0, bizBalance - totalExpenses - committed);
+  const committed     = getCommittedAmount();
+  const subsDrain     = getSubsMonthly();
+  return Math.max(0, bizBalance - totalExpenses - committed - subsDrain);
 }
 
 function getBizNetYTD() {
