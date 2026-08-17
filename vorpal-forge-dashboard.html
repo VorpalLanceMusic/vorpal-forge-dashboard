@@ -2064,10 +2064,9 @@
     <button class="tab-btn active" onclick="switchPage('dashboard', this)">Dashboard</button>
     <button class="tab-btn" onclick="switchPage('coaching', this)">Coaching</button>
     <button class="tab-btn" onclick="switchPage('matchmaking', this)">Matchmaking</button>
-    <button class="tab-btn" onclick="switchPage('income', this)">Income</button>
+    <button class="tab-btn" onclick="switchPage('budget', this)">Budget</button>
     <button class="tab-btn" onclick="switchPage('content', this)">Content</button>
     <button class="tab-btn" onclick="switchPage('patreon', this)">Patreon</button>
-    <button class="tab-btn" onclick="switchPage('budget', this)">💰 Budget</button>
   </nav>
 
   <!-- DASHBOARD PAGE -->
@@ -2513,34 +2512,9 @@
   </div>
 
   <div class="page-view" id="page-income">
-    <div class="panel" style="min-height:75vh;">
-      <div class="panel-header">
-        <span class="panel-title">📈 Income & Expense Trends</span>
-        <div style="display:flex;gap:4px;">
-          <button class="btn btn-sm income-range-btn" data-range="30" onclick="setIncomeRange('30', this)">30 Days</button>
-          <button class="btn btn-sm income-range-btn" data-range="90" onclick="setIncomeRange('90', this)">90 Days</button>
-          <button class="btn btn-sm income-range-btn active" data-range="12mo" onclick="setIncomeRange('12mo', this)">12 Months</button>
-          <button class="btn btn-sm income-range-btn" data-range="all" onclick="setIncomeRange('all', this)">All Time</button>
-        </div>
-      </div>
-      <div class="panel-body">
-        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:18px;">
-          <div class="stat-item">
-            <div class="stat-label">Total Income (range)</div>
-            <div class="stat-value" id="income-range-total" style="color:var(--success);text-shadow:0 0 12px rgba(85,204,136,0.4);">$0</div>
-          </div>
-          <div class="stat-item">
-            <div class="stat-label">Total Expenses (range)</div>
-            <div class="stat-value" id="income-range-expenses" style="color:var(--danger);text-shadow:0 0 12px rgba(224,85,85,0.4);">$0</div>
-          </div>
-          <div class="stat-item">
-            <div class="stat-label">Net (range)</div>
-            <div class="stat-value gold" id="income-range-net">$0</div>
-          </div>
-        </div>
-        <canvas id="income-chart" style="width:100%;max-height:50vh;"></canvas>
-        <div id="income-chart-empty" class="empty-state" style="display:none;padding:40px;">No income or expense data yet for this range. Once you log entries, the trend will show up here.</div>
-      </div>
+    <!-- Income tab folded into Budget tab -->
+    <div style="padding:40px;text-align:center;color:var(--text-ghost);font-size:0.8rem;">
+      Income tracking has moved to the <strong style="color:var(--teal);cursor:pointer;" onclick="switchPageByName('budget')">Budget tab</strong>.
     </div>
   </div>
 
@@ -4804,39 +4778,21 @@ function saveAsDefault() {
 // EXPENSES
 // ═══════════════════════════════════════════════
 function renderExpenses() {
-  const list = document.getElementById('expense-list');
-  const sorted = [...expenses].sort((a,b) => new Date(b.date) - new Date(a.date));
-  list.innerHTML = sorted.slice(0,8).map(e => `
-    <div class="expense-item">
-      <span class="exp-desc">${esc(e.desc)}${e.auto ? ' <span style="font-size:0.58rem;color:var(--text-ghost);font-style:italic;">(auto)</span>' : ''}</span>
-      <span class="exp-amount ${e.type}">${e.type==='income'?'+':'-'}$${Math.abs(e.amount).toFixed(2)}</span>
-      <span class="exp-date">${e.date}</span>
-      <button class="btn-icon" onclick="deleteExpense('${e.id}')" ${e.auto ? 'title="Auto-logged from commission"' : ''}>✕</button>
-    </div>`).join('') || '<div class="empty-state">No entries yet.</div>';
-
-  const ytdIncome = expenses.filter(e=>e.type==='income').reduce((s,e)=>s+(e.amount||0),0);
-  const ytdExpense = expenses.filter(e=>e.type==='expense').reduce((s,e)=>s+(e.amount||0),0);
-  document.getElementById('exp-income').textContent = '$'+ytdIncome.toFixed(2);
-  document.getElementById('exp-expenses').textContent = '$'+ytdExpense.toFixed(2);
-
-  // Set default date to today
-  const dateInput = document.getElementById('exp-date');
-  if (!dateInput.value) dateInput.value = new Date().toISOString().split('T')[0];
+  // These DOM elements no longer exist (panel moved to Budget tab).
+  // Keep function alive for all the autoLog calls that invoke it -- just update budget glance instead.
+  updateBudgetGlance();
+  // If budget tab is open, refresh it too
+  const budPage = document.getElementById('page-budget');
+  if (budPage && budPage.classList.contains('active')) {
+    renderBudExpenses();
+    renderSourceBars();
+    updateOverview();
+  }
 }
 
 function addExpense() {
-  const desc = document.getElementById('exp-desc').value.trim();
-  const amount = parseFloat(document.getElementById('exp-amount').value);
-  const type = document.getElementById('exp-type').value;
-  const date = document.getElementById('exp-date').value;
-  if (!desc || isNaN(amount)) return;
-  expenses.push({ id: 'e_'+Date.now(), desc, amount, type, date });
-  save('vf_expenses', expenses);
-  document.getElementById('exp-desc').value = '';
-  document.getElementById('exp-amount').value = '';
-  renderExpenses();
-  updateStats();
-  showPraise('expense');
+  // Quick-add form removed -- manual entries now go through Budget tab modal.
+  openAddBudExpense();
 }
 
 function deleteExpense(id) {
@@ -5424,7 +5380,7 @@ function switchPage(pageName, btn) {
 
   if (pageName === 'coaching') renderCoachingFull();
   if (pageName === 'matchmaking') renderOneShotFull();
-  if (pageName === 'income') renderIncomeChart();
+  if (pageName === 'income') { switchPageByName('budget'); return; }
   if (pageName === 'content') renderContentIdeas();
   if (pageName === 'patreon') renderPatreonInfo();
   if (pageName === 'budget') renderBudgetTab();
@@ -6894,8 +6850,7 @@ renderOneShotMini();
 renderOneShotFull();
 updateSocialMediaReminder();
 
-// Set today's date on expense form
-document.getElementById('exp-date').value = new Date().toISOString().split('T')[0];
+// (expense form moved to Budget tab modal)
 
 // Auto-sync on load, pulls Music + One-Shot + Map + Coaching in one pass
 syncAllFromSheet();
@@ -7247,14 +7202,11 @@ function renderKnobs() {
 }
 
 function renderKnobSVG(pct, color) {
-  // Knob: 270 degree arc, -135 to +135 degrees from bottom
   const minAngle = -135;
   const maxAngle =  135;
   const angle = minAngle + (pct / 100) * (maxAngle - minAngle);
-  const rad = (angle - 90) * Math.PI / 180;
   const cx = 32, cy = 32, r = 22;
 
-  // Arc path for filled portion
   function polarToXY(deg) {
     const r2 = (deg - 90) * Math.PI / 180;
     return { x: cx + r * Math.cos(r2), y: cy + r * Math.sin(r2) };
@@ -7263,43 +7215,39 @@ function renderKnobSVG(pct, color) {
   const end   = polarToXY(angle);
   const largeArc = (angle - minAngle) > 180 ? 1 : 0;
 
-  // Indicator dot
   const dotR = 26;
   const dotRad = (angle - 90) * Math.PI / 180;
   const dotX = cx + dotR * Math.cos(dotRad);
   const dotY = cy + dotR * Math.sin(dotRad);
 
+  const ticks = [];
+  for (let i = 0; i <= 10; i++) {
+    const tickAngle = minAngle + (i / 10) * (maxAngle - minAngle);
+    const tickRad = (tickAngle - 90) * Math.PI / 180;
+    const innerR = 27, outerR = 30;
+    const x1 = cx + innerR * Math.cos(tickRad);
+    const y1 = cy + innerR * Math.sin(tickRad);
+    const x2 = cx + outerR * Math.cos(tickRad);
+    const y2 = cy + outerR * Math.sin(tickRad);
+    ticks.push(`<line x1="${x1.toFixed(2)}" y1="${y1.toFixed(2)}" x2="${x2.toFixed(2)}" y2="${y2.toFixed(2)}" stroke="#3a3f50" stroke-width="${i%5===0?1.5:0.8}"/>`);
+  }
+
   return `<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
-    <!-- Outer ring (silver amp hardware) -->
-    <circle cx="32" cy="32" r="30" fill="none" stroke="#3a3f50" stroke-width="1.5"/>
-    <circle cx="32" cy="32" r="30" fill="url(#knob-grad-${color.replace('#','')})" opacity="0.08"/>
-    <defs>
-      <radialGradient id="knob-grad-${color.replace('#','')}" cx="40%" cy="35%">
-        <stop offset="0%" stop-color="#ffffff" stop-opacity="0.15"/>
-        <stop offset="100%" stop-color="#000000" stop-opacity="0"/>
-      </radialGradient>
-    </defs>
-    <!-- Track -->
-    <path d="M ${polarToXY(minAngle).x} ${polarToXY(minAngle).y} A ${r} ${r} 0 1 1 ${polarToXY(maxAngle).x} ${polarToXY(maxAngle).y}"
-          fill="none" stroke="rgba(255,255,255,0.07)" stroke-width="3" stroke-linecap="round"/>
-    <!-- Filled arc -->
-    ${pct > 0 ? `<path d="M ${start.x} ${start.y} A ${r} ${r} 0 ${largeArc} 1 ${end.x} ${end.y}"
-          fill="none" stroke="${color}" stroke-width="3" stroke-linecap="round" opacity="0.9"/>` : ''}
-    <!-- Knob body -->
-    <circle cx="32" cy="32" r="18" fill="#1a1e2a" stroke="#4a5060" stroke-width="1"/>
-    <circle cx="32" cy="32" r="17" fill="url(#knob-body-${color.replace('#','')})"/>
-    <defs>
-      <radialGradient id="knob-body-${color.replace('#','')}" cx="38%" cy="32%">
-        <stop offset="0%" stop-color="#2e3345"/>
-        <stop offset="100%" stop-color="#12151f"/>
-      </radialGradient>
-    </defs>
-    <!-- Silver indicator line -->
-    <line x1="32" y1="32" x2="${dotX}" y2="${dotY}" stroke="#c8ccd8" stroke-width="2" stroke-linecap="round" opacity="0.85"/>
-    <circle cx="${dotX}" cy="${dotY}" r="2" fill="#c8ccd8" opacity="0.9"/>
-    <!-- Center screw (amp hardware detail) -->
-    <circle cx="32" cy="32" r="2.5" fill="#3a3f50"/>
-    <circle cx="32" cy="32" r="1.2" fill="#c8ccd8" opacity="0.5"/>
+    <circle cx="32" cy="32" r="31" fill="#22263a" stroke="#4a5060" stroke-width="1"/>
+    <circle cx="32" cy="32" r="30" fill="none" stroke="#5a6070" stroke-width="0.5" opacity="0.4"/>
+    ${ticks.join('')}
+    <path d="M ${polarToXY(minAngle).x.toFixed(2)} ${polarToXY(minAngle).y.toFixed(2)} A ${r} ${r} 0 1 1 ${polarToXY(maxAngle).x.toFixed(2)} ${polarToXY(maxAngle).y.toFixed(2)}"
+          fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="3.5" stroke-linecap="round"/>
+    ${pct > 0 ? `<path d="M ${start.x.toFixed(2)} ${start.y.toFixed(2)} A ${r} ${r} 0 ${largeArc} 1 ${end.x.toFixed(2)} ${end.y.toFixed(2)}"
+          fill="none" stroke="${color}" stroke-width="3.5" stroke-linecap="round" opacity="0.9"/>` : ''}
+    <circle cx="32" cy="32" r="18" fill="#12151f" stroke="#4a5060" stroke-width="1.2"/>
+    <circle cx="32" cy="32" r="17" fill="#1a1e2a"/>
+    <circle cx="28" cy="27" r="6" fill="white" opacity="0.03"/>
+    <line x1="32" y1="32" x2="${dotX.toFixed(2)}" y2="${dotY.toFixed(2)}" stroke="#c8ccd8" stroke-width="2.5" stroke-linecap="round" opacity="0.9"/>
+    <circle cx="${dotX.toFixed(2)}" cy="${dotY.toFixed(2)}" r="2.5" fill="${color}" opacity="1"/>
+    <circle cx="32" cy="32" r="3" fill="#2e3345" stroke="#5a6070" stroke-width="0.8"/>
+    <line x1="30" y1="32" x2="34" y2="32" stroke="#7a8090" stroke-width="0.8" opacity="0.7"/>
+    <line x1="32" y1="30" x2="32" y2="34" stroke="#7a8090" stroke-width="0.8" opacity="0.7"/>
   </svg>`;
 }
 
@@ -8204,9 +8152,11 @@ function renderBudgetTab() {
   document.getElementById('bud-exp-year').textContent = new Date().getFullYear();
 }
 
-// Init glance on page load
-updateBudgetGlance();
-renderDealAlerts();
+// Init glance on page load -- deferred so all lets are initialized first
+window.addEventListener('load', function() {
+  updateBudgetGlance();
+  renderDealAlerts();
+});
 
 </script>
 </body>
