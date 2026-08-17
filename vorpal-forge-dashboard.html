@@ -1629,6 +1629,413 @@
     font-style: italic;
   }
 
+
+/* ═══════════════════════════════════════════════
+   BUDGET TAB STYLES
+   ═══════════════════════════════════════════════ */
+
+/* Layout */
+.budget-layout {
+  display: grid;
+  grid-template-columns: 240px 1fr 300px;
+  grid-template-rows: auto auto;
+  gap: 14px;
+  padding: 14px;
+  min-height: 80vh;
+}
+.budget-sidebar { display: flex; flex-direction: column; gap: 14px; grid-row: 1 / 3; }
+.budget-center  { display: flex; flex-direction: column; gap: 14px; }
+.budget-right   { display: flex; flex-direction: column; gap: 14px; grid-row: 1 / 3; }
+
+/* Amp Panel */
+.amp-panel {
+  background: linear-gradient(160deg, #1a1e2a 0%, #12151f 100%);
+  border: 1px solid #2a3040;
+  border-radius: 10px;
+  padding: 18px;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.04), 0 4px 20px rgba(0,0,0,0.4);
+}
+.amp-panel-title {
+  font-size: 0.6rem;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  color: var(--text-ghost);
+  margin-bottom: 18px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.amp-panel-title::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, #2a3040, transparent);
+}
+.amp-knobs-row {
+  display: flex;
+  justify-content: space-around;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.amp-knob-group {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+.amp-knob-label {
+  font-size: 0.55rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--text-ghost);
+}
+/* Knob SVG wrapper */
+.knob-svg-wrap {
+  position: relative;
+  width: 64px;
+  height: 64px;
+  cursor: ns-resize;
+  user-select: none;
+}
+.knob-svg-wrap svg { width: 64px; height: 64px; display: block; }
+.knob-value-display {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--teal);
+  text-align: center;
+  min-width: 48px;
+}
+.knob-dollar-display {
+  font-size: 0.6rem;
+  color: var(--text-ghost);
+  text-align: center;
+  min-width: 60px;
+}
+.knob-input-field {
+  width: 48px;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--border);
+  color: var(--teal);
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-align: center;
+  outline: none;
+  display: none;
+}
+.amp-total-bar {
+  margin-top: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.62rem;
+  color: var(--text-ghost);
+}
+.amp-total-val { font-weight: 700; font-size: 0.8rem; }
+.amp-warning { color: #f0a500; }
+.amp-ok { color: var(--success); }
+
+/* Subscription & Expense sidebar panels */
+.bud-panel {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+.bud-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 9px 12px;
+  border-bottom: 1px solid var(--border);
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--text-ghost);
+}
+.bud-panel-body { padding: 10px 12px; }
+.sub-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 5px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+  font-size: 0.72rem;
+}
+.sub-item:last-child { border-bottom: none; }
+.sub-name { flex: 1; color: var(--text); }
+.sub-amt { color: var(--danger); font-weight: 600; min-width: 52px; text-align: right; }
+.sub-del { background: none; border: none; color: var(--text-ghost); cursor: pointer; font-size: 0.7rem; padding: 0 0 0 6px; }
+.sub-del:hover { color: var(--danger); }
+.sub-total-row {
+  display: flex;
+  justify-content: space-between;
+  padding-top: 7px;
+  margin-top: 4px;
+  border-top: 1px solid var(--border);
+  font-size: 0.68rem;
+  font-weight: 700;
+}
+
+/* Expense sidebar */
+.bud-expense-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  padding: 5px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+  font-size: 0.68rem;
+}
+.bud-expense-item:last-child { border-bottom: none; }
+.bud-exp-info { flex: 1; min-width: 0; }
+.bud-exp-desc { color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.bud-exp-meta { font-size: 0.58rem; color: var(--text-ghost); margin-top: 1px; }
+.bud-exp-amt { color: var(--danger); font-weight: 600; white-space: nowrap; }
+.bud-exp-del { background: none; border: none; color: var(--text-ghost); cursor: pointer; font-size: 0.65rem; padding: 0; flex-shrink: 0; }
+.bud-exp-del:hover { color: var(--danger); }
+.ytd-net-bar {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.68rem;
+}
+.ytd-net-label { color: var(--text-ghost); }
+.ytd-net-val { font-weight: 700; font-size: 0.9rem; }
+.ytd-net-val.profit { color: var(--success); }
+.ytd-net-val.loss { color: var(--danger); }
+
+/* Goals panel */
+.goal-item {
+  background: rgba(255,255,255,0.02);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 10px;
+  margin-bottom: 8px;
+}
+.goal-item:last-child { margin-bottom: 0; }
+.goal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+.goal-name { font-size: 0.72rem; font-weight: 600; color: var(--text); }
+.goal-badge {
+  font-size: 0.55rem;
+  padding: 2px 6px;
+  border-radius: 3px;
+  background: var(--teal-ghost);
+  color: var(--teal);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+.goal-amounts { display: flex; justify-content: space-between; font-size: 0.62rem; color: var(--text-ghost); margin-bottom: 5px; }
+.goal-thermometer {
+  height: 8px;
+  background: rgba(255,255,255,0.06);
+  border-radius: 4px;
+  overflow: hidden;
+  margin-bottom: 7px;
+}
+.goal-thermo-fill {
+  height: 100%;
+  border-radius: 4px;
+  background: linear-gradient(90deg, var(--teal), #4ecdc4);
+  transition: width 0.6s cubic-bezier(0.34,1.56,0.64,1);
+  position: relative;
+}
+.goal-thermo-fill::after {
+  content: '';
+  position: absolute;
+  top: 0; right: 0;
+  width: 6px; height: 100%;
+  background: rgba(255,255,255,0.25);
+  border-radius: 0 4px 4px 0;
+  animation: shimmer 2s infinite;
+}
+@keyframes shimmer { 0%,100%{opacity:0.3} 50%{opacity:1} }
+.goal-actions { display: flex; gap: 5px; align-items: center; }
+.goal-alloc-input {
+  flex: 1;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--text);
+  font-size: 0.68rem;
+  padding: 3px 7px;
+  outline: none;
+}
+.goal-alloc-input:focus { border-color: var(--teal-dim); }
+
+/* Art Goals */
+.art-goal-item {
+  background: rgba(212,175,55,0.04);
+  border: 1px solid rgba(212,175,55,0.15);
+  border-radius: 6px;
+  padding: 10px;
+  margin-bottom: 8px;
+}
+.art-goal-item:last-child { margin-bottom: 0; }
+.art-goal-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 4px; }
+.art-goal-name { font-size: 0.72rem; font-weight: 600; color: var(--gold); }
+.art-goal-note { font-size: 0.6rem; color: var(--text-ghost); margin-bottom: 6px; }
+.art-goal-amounts { display: flex; justify-content: space-between; font-size: 0.62rem; margin-bottom: 5px; }
+.art-goal-paid-amt { color: var(--success); }
+.art-goal-remain-amt { color: var(--text-ghost); }
+.art-goal-thermo {
+  height: 6px;
+  background: rgba(255,255,255,0.06);
+  border-radius: 3px;
+  overflow: hidden;
+  margin-bottom: 7px;
+}
+.art-goal-fill {
+  height: 100%;
+  border-radius: 3px;
+  background: linear-gradient(90deg, var(--gold), #f5d060);
+  transition: width 0.6s cubic-bezier(0.34,1.56,0.64,1);
+}
+.art-goal-actions { display: flex; gap: 5px; align-items: center; flex-wrap: wrap; }
+
+/* Deal tracker */
+.deal-item {
+  background: rgba(255,255,255,0.02);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 10px;
+  margin-bottom: 8px;
+}
+.deal-item:last-child { margin-bottom: 0; }
+.deal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+.deal-name { font-size: 0.72rem; font-weight: 600; color: var(--text); }
+.deal-source-tag {
+  font-size: 0.55rem;
+  padding: 2px 6px;
+  border-radius: 3px;
+  background: rgba(212,175,55,0.1);
+  color: var(--gold);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+.deal-pools { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 6px; }
+.deal-pool-chip {
+  font-size: 0.6rem;
+  padding: 3px 8px;
+  border-radius: 4px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid var(--border);
+  color: var(--text-ghost);
+}
+.deal-pool-chip strong { color: var(--teal); }
+.deal-due-row {
+  font-size: 0.62rem;
+  color: var(--text-ghost);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 4px;
+}
+.deal-due-urgent { color: #f0a500 !important; animation: pulse 1.5s infinite; }
+.deal-due-today { color: var(--danger) !important; animation: pulse 0.8s infinite; }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.5} }
+.deal-toggle { font-size: 0.6rem; padding: 2px 8px; }
+.deal-paused { opacity: 0.45; }
+
+/* Deal alert strip on dashboard */
+.deal-alert {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: 5px;
+  margin-bottom: 5px;
+  font-size: 0.65rem;
+  cursor: pointer;
+}
+.deal-alert.warn { background: rgba(240,165,0,0.1); border: 1px solid rgba(240,165,0,0.25); color: #f0a500; }
+.deal-alert.urgent { background: rgba(224,85,85,0.1); border: 1px solid rgba(224,85,85,0.3); color: var(--danger); animation: pulse 1.2s infinite; }
+.deal-alert-dismiss { margin-left: auto; background: none; border: none; color: inherit; cursor: pointer; font-size: 0.7rem; opacity: 0.6; }
+.deal-alert-dismiss:hover { opacity: 1; }
+
+/* Budget overview section */
+.budget-overview-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-top: 4px;
+}
+.overview-stat {
+  background: rgba(255,255,255,0.02);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 10px 12px;
+}
+.overview-stat-label { font-size: 0.58rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-ghost); margin-bottom: 4px; }
+.overview-stat-val { font-size: 1rem; font-weight: 700; }
+.source-bar-row { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; font-size: 0.65rem; }
+.source-bar-label { min-width: 110px; color: var(--text-ghost); }
+.source-bar-track { flex: 1; height: 6px; background: rgba(255,255,255,0.06); border-radius: 3px; overflow: hidden; }
+.source-bar-fill { height: 100%; border-radius: 3px; transition: width 0.5s ease; }
+.source-bar-val { min-width: 48px; text-align: right; color: var(--text); font-weight: 600; }
+
+/* Glance panel hover */
+.budget-glance-panel:hover { border-color: var(--teal-dim); }
+.glance-bucket-row { display: flex; align-items: center; gap: 7px; font-size: 0.62rem; margin-bottom: 4px; }
+.glance-bucket-label { min-width: 60px; color: var(--text-ghost); }
+.glance-bucket-track { flex: 1; height: 5px; background: rgba(255,255,255,0.06); border-radius: 3px; overflow: hidden; }
+.glance-bucket-fill { height: 100%; border-radius: 3px; background: var(--teal); }
+.glance-bucket-val { min-width: 44px; text-align: right; color: var(--text); font-weight: 600; font-size: 0.6rem; }
+
+/* Undo toast */
+.undo-toast {
+  position: fixed;
+  bottom: 80px;
+  left: 50%;
+  transform: translateX(-50%) translateY(20px);
+  background: #1e2535;
+  border: 1px solid var(--teal-dim);
+  border-radius: 6px;
+  padding: 8px 16px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.72rem;
+  color: var(--text);
+  z-index: 1000;
+  opacity: 0;
+  transition: opacity 0.2s, transform 0.2s;
+  pointer-events: none;
+}
+.undo-toast.visible { opacity: 1; transform: translateX(-50%) translateY(0); pointer-events: all; }
+.undo-toast button { background: none; border: 1px solid var(--teal-dim); border-radius: 4px; color: var(--teal); font-size: 0.68rem; padding: 2px 10px; cursor: pointer; }
+
+/* Gamification sparkle */
+@keyframes sparkle-burst {
+  0%   { transform: scale(0) rotate(0deg); opacity: 1; }
+  60%  { transform: scale(1.6) rotate(180deg); opacity: 0.8; }
+  100% { transform: scale(2.2) rotate(360deg); opacity: 0; }
+}
+.sparkle { position: fixed; pointer-events: none; z-index: 9999; font-size: 1.2rem; animation: sparkle-burst 0.7s ease-out forwards; }
+
+/* Modal overrides for budget modals */
+.bud-modal { min-width: 320px; max-width: 480px; }
+.bud-form-row { display: flex; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; }
+.bud-form-group { display: flex; flex-direction: column; gap: 4px; flex: 1; min-width: 120px; }
+.bud-form-label { font-size: 0.62rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-ghost); }
+.bud-form-input {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  color: var(--text);
+  font-size: 0.78rem;
+  padding: 6px 9px;
+  outline: none;
+  width: 100%;
+  box-sizing: border-box;
+}
+.bud-form-input:focus { border-color: var(--teal-dim); }
+.deal-rule-row { display: flex; gap: 6px; align-items: center; margin-bottom: 6px; }
+.deal-rule-row input { flex: 1; }
+.deal-rule-remove { background: none; border: none; color: var(--danger); cursor: pointer; font-size: 0.8rem; }
+
 </style>
 </head>
 <body>
@@ -1660,6 +2067,7 @@
     <button class="tab-btn" onclick="switchPage('income', this)">Income</button>
     <button class="tab-btn" onclick="switchPage('content', this)">Content</button>
     <button class="tab-btn" onclick="switchPage('patreon', this)">Patreon</button>
+    <button class="tab-btn" onclick="switchPage('budget', this)">💰 Budget</button>
   </nav>
 
   <!-- DASHBOARD PAGE -->
@@ -1847,43 +2255,168 @@
       </div>
     </div>
 
-    <!-- EXPENSES -->
-    <div class="panel">
+    <!-- BUDGET GLANCE -->
+    <div class="panel budget-glance-panel" onclick="switchPageByName('budget')" style="cursor:pointer;" title="Click to open Budget tab">
       <div class="panel-header">
-        <span class="panel-title">Expenses & Income</span>
-        <button class="btn btn-sm" onclick="exportTaxData()">↓ Export</button>
+        <span class="panel-title">💰 Budget</span>
+        <span style="font-size:0.65rem;color:var(--teal);letter-spacing:0.05em;">↗ open</span>
       </div>
-      <div class="panel-body">
-        <div class="expense-summary">
-          <div class="exp-sum-item">
-            <div class="exp-sum-label">Income (YTD)</div>
-            <div class="exp-sum-value" id="exp-income">$0</div>
+      <div class="panel-body" id="budget-glance-body">
+        <!-- Deal alerts strip -->
+        <div id="deal-alerts-strip"></div>
+        <!-- YTD net -->
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+          <div>
+            <div style="font-size:0.6rem;color:var(--text-ghost);text-transform:uppercase;letter-spacing:0.08em;">Business Net YTD</div>
+            <div id="glance-net" style="font-size:1.3rem;font-weight:700;color:var(--danger);">$0</div>
           </div>
-          <div class="exp-sum-item">
-            <div class="exp-sum-label">Expenses (YTD)</div>
-            <div class="exp-sum-value negative" id="exp-expenses">$0</div>
-          </div>
-        </div>
-        <div class="expense-list" id="expense-list"></div>
-        <div class="exp-add-row">
-          <div class="exp-row">
-            <input type="text" class="exp-input" id="exp-desc" placeholder="Description..." style="flex:2;">
-            <input type="number" class="exp-input" id="exp-amount" placeholder="$0.00" style="width:80px;flex:none;">
-          </div>
-          <div class="exp-row">
-            <select class="exp-type-select" id="exp-type">
-              <option value="income">Income</option>
-              <option value="expense">Expense</option>
-            </select>
-            <input type="date" class="exp-input" id="exp-date" style="flex:1;">
-            <button class="btn btn-teal btn-sm" onclick="addExpense()">Add</button>
+          <div style="text-align:right;">
+            <div style="font-size:0.6rem;color:var(--text-ghost);text-transform:uppercase;letter-spacing:0.08em;">Liquid / Committed</div>
+            <div style="font-size:0.75rem;"><span id="glance-liquid" style="color:var(--success);">$0</span> <span style="color:var(--text-ghost);">/</span> <span id="glance-committed" style="color:var(--gold);">$0</span></div>
           </div>
         </div>
+        <!-- Bucket mini bars -->
+        <div id="glance-buckets" style="display:flex;flex-direction:column;gap:5px;"></div>
       </div>
     </div>
 
   </div>
   </div> <!-- /page-dashboard -->
+
+  <!-- BUDGET PAGE -->
+  <div class="page-view" id="page-budget">
+    <div class="budget-layout">
+
+      <!-- ══ LEFT SIDEBAR ══ -->
+      <div class="budget-sidebar">
+
+        <!-- Subscriptions -->
+        <div class="bud-panel">
+          <div class="bud-panel-header">
+            <span>Subscriptions</span>
+            <button class="btn btn-teal btn-sm" style="font-size:0.6rem;padding:2px 8px;" onclick="openAddSubscription()">+ Add</button>
+          </div>
+          <div class="bud-panel-body">
+            <div id="sub-list"></div>
+            <div class="sub-total-row">
+              <span style="color:var(--text-ghost);">Monthly total</span>
+              <span id="sub-total" style="color:var(--danger);">$0</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Expenses -->
+        <div class="bud-panel" style="flex:1;">
+          <div class="bud-panel-header">
+            <span>Expenses <span id="bud-exp-year" style="color:var(--teal);"></span></span>
+            <button class="btn btn-teal btn-sm" style="font-size:0.6rem;padding:2px 8px;" onclick="openAddBudExpense()">+ Add</button>
+          </div>
+          <div class="bud-panel-body" style="display:flex;flex-direction:column;height:calc(100% - 36px);box-sizing:border-box;">
+            <div id="bud-exp-list" style="flex:1;overflow-y:auto;max-height:280px;"></div>
+            <div class="ytd-net-bar">
+              <span class="ytd-net-label">Business Net YTD</span>
+              <span id="bud-ytd-net" class="ytd-net-val loss">$0</span>
+            </div>
+            <button class="btn btn-sm" style="margin-top:8px;font-size:0.6rem;" onclick="exportBudgetTaxData()">↓ Export Tax CSV</button>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- ══ CENTER ══ -->
+      <div class="budget-center">
+
+        <!-- Amp Knobs Panel -->
+        <div class="amp-panel">
+          <div class="amp-panel-title">Bucket Allocation</div>
+          <div class="amp-knobs-row" id="amp-knobs-row">
+            <!-- Rendered by JS -->
+          </div>
+          <div class="amp-total-bar">
+            <span>Total allocated: <span id="amp-total-pct" class="amp-total-val amp-ok">100%</span></span>
+            <span id="amp-total-msg" style="font-size:0.6rem;"></span>
+            <span style="color:var(--text-ghost);font-size:0.6rem;">Monthly income: <strong id="amp-monthly-income" style="color:var(--success);">$0</strong></span>
+          </div>
+        </div>
+
+        <!-- Budget Overview / Trends -->
+        <div class="bud-panel">
+          <div class="bud-panel-header">
+            <span>Budget Overview</span>
+          </div>
+          <div class="bud-panel-body">
+            <div class="budget-overview-grid">
+              <div class="overview-stat">
+                <div class="overview-stat-label">Liquid (Business)</div>
+                <div class="overview-stat-val" id="ov-liquid" style="color:var(--success);">$0</div>
+              </div>
+              <div class="overview-stat">
+                <div class="overview-stat-label">Committed</div>
+                <div class="overview-stat-val" id="ov-committed" style="color:var(--gold);">$0</div>
+              </div>
+              <div class="overview-stat">
+                <div class="overview-stat-label">Art Runway</div>
+                <div class="overview-stat-val" id="ov-art-runway" style="color:var(--teal);">$0</div>
+              </div>
+              <div class="overview-stat">
+                <div class="overview-stat-label">Goals Progress</div>
+                <div class="overview-stat-val" id="ov-goals-pct" style="color:var(--text);">0%</div>
+              </div>
+            </div>
+            <div style="margin-top:14px;">
+              <div style="font-size:0.6rem;text-transform:uppercase;letter-spacing:0.1em;color:var(--text-ghost);margin-bottom:10px;">Income by Source (YTD)</div>
+              <div id="source-bars"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Deal Tracker -->
+        <div class="bud-panel">
+          <div class="bud-panel-header">
+            <span>Deal Tracker</span>
+            <button class="btn btn-teal btn-sm" style="font-size:0.6rem;padding:2px 8px;" onclick="openAddDeal()">+ New Deal</button>
+          </div>
+          <div class="bud-panel-body">
+            <div id="deal-list"></div>
+            <div id="deal-empty" class="empty-state" style="display:none;padding:20px;font-size:0.72rem;">No deals set up yet. Use revenue-sharing arrangements with collaborators here.</div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- ══ RIGHT SIDEBAR ══ -->
+      <div class="budget-right">
+
+        <!-- Savings Goals -->
+        <div class="bud-panel">
+          <div class="bud-panel-header">
+            <span>Savings Goals</span>
+            <button class="btn btn-teal btn-sm" style="font-size:0.6rem;padding:2px 8px;" onclick="openAddGoal()">+ New Goal</button>
+          </div>
+          <div class="bud-panel-body">
+            <div id="goals-list"></div>
+            <div id="goals-empty" class="empty-state" style="display:none;padding:20px;font-size:0.72rem;">No goals yet. Dream guitar at 0% is still a dream guitar.</div>
+          </div>
+        </div>
+
+        <!-- Art Goals -->
+        <div class="bud-panel">
+          <div class="bud-panel-header">
+            <span>Art Goals</span>
+            <span style="font-size:0.58rem;color:var(--text-ghost);">Runway: <strong id="art-runway-display" style="color:var(--teal);">$0</strong></span>
+            <button class="btn btn-sm" style="font-size:0.6rem;padding:2px 8px;border-color:var(--gold);color:var(--gold);" onclick="openAddArtGoal()">+ New Art Goal</button>
+          </div>
+          <div class="bud-panel-body">
+            <div id="art-goals-list"></div>
+            <div id="art-goals-empty" class="empty-state" style="display:none;padding:20px;font-size:0.72rem;">No active art goals. Budget for upcoming commissions here.</div>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+  </div>
+  <!-- /BUDGET PAGE -->
 
   <!-- COACHING PAGE -->
   <div class="page-view" id="page-coaching">
@@ -2096,6 +2629,8 @@
 
 <!-- PRAISE OVERLAY -->
 <div class="praise-overlay" id="praise-overlay" style="display:none;"></div>
+<div class="undo-toast" id="undo-toast"><span id="undo-toast-msg">Action undone.</span><button onclick="executeUndo()">↩ Undo</button></div>
+<div id="sparkle-container" style="position:fixed;top:0;left:0;pointer-events:none;z-index:9999;"></div>
 
 <!-- NOW BAR -->
 <div id="now-bar">
@@ -2140,7 +2675,37 @@ let praiseBank = {
   reminder: [
     { text: "Noted, Maestro.", sub: "Won't forget." },
     { text: "Added to the Wall of Concerns.", sub: "You've been warned." },
-  ]
+  ],
+  bucketSave: [
+    { text: "Allocation locked.", sub: "The Forge knows where the gold goes." },
+    { text: "Knobs adjusted. Very professional.", sub: "Accounting would be proud." },
+    { text: "Budget dialed in.", sub: "You're literally doing the thing." },
+  ],
+  goalAlloc: [
+    { text: "Money committed.", sub: "It believes in you now." },
+    { text: "The thermometer is rising.", sub: "One allocation closer." },
+    { text: "Earmarked and accounted for.", sub: "Future you says thanks." },
+    { text: "Dream guitar: still a dream. But louder.", sub: "Keep going." },
+  ],
+  goalComplete: [
+    { text: "GOAL REACHED.", sub: "Buy the thing. You earned it." },
+    { text: "🎉 THE FORGE PROVIDES.", sub: "Goal complete. Treat yourself." },
+    { text: "Full funded. No debate.", sub: "Go get it." },
+  ],
+  artPaid: [
+    { text: "Art commissioned. Paid in full.", sub: "Into the archive it goes." },
+    { text: "The artist has been paid.", sub: "Good. Pay your artists." },
+    { text: "Transaction complete.", sub: "Tax records updated. Responsible king." },
+  ],
+  dealFired: [
+    { text: "Deal allocation triggered.", sub: "Pools updated automatically." },
+    { text: "Revenue shared.", sub: "The math did the work." },
+  ],
+  expenseLogged: [
+    { text: "Logged. Accounted for.", sub: "First year is always the rough one." },
+    { text: "Expense recorded.", sub: "Tax season will thank you." },
+    { text: "Into the ledger it goes.", sub: "You're more organized than you think." },
+  ],
 };
 
 function getRandomPraise(ctx) {
@@ -3059,12 +3624,16 @@ function autoLogIncome(c, prevPayStatus) {
     ? `${c.clientName} — ${c.type} (incl. $${c.tipAmount} tip)`
     : `${c.clientName} — ${c.type}`;
 
+  const isMap = c.id && c.id.startsWith('map_');
+  const incomeSource = isMap ? 'map_commission' : 'music_commission';
+
   expenses.push({
     id: 'e_' + Date.now(),
     autoId: c.id,
     desc,
     amount: c.price,
     type: 'income',
+    source: incomeSource,
     date: new Date().toISOString().split('T')[0],
     auto: true,
   });
@@ -3072,6 +3641,7 @@ function autoLogIncome(c, prevPayStatus) {
   save('vf_expenses', expenses);
   renderExpenses();
   updateStats();
+  checkDealFires(incomeSource, c.price);
 }
 
 function saveNewCommission() {
@@ -4857,6 +5427,7 @@ function switchPage(pageName, btn) {
   if (pageName === 'income') renderIncomeChart();
   if (pageName === 'content') renderContentIdeas();
   if (pageName === 'patreon') renderPatreonInfo();
+  if (pageName === 'budget') renderBudgetTab();
 }
 
 function switchPageByName(pageName) {
@@ -5358,12 +5929,14 @@ function autoLogCoachingIncome(session) {
     desc,
     amount: session.price || 0,
     type: 'income',
+    source: 'coaching',
     date: new Date().toISOString().split('T')[0],
     auto: true,
   });
   save('vf_expenses', expenses);
   renderExpenses();
   updateStats();
+  checkDealFires('coaching', session.price || 0);
 }
 
 function openNewCoaching() {
@@ -5724,12 +6297,14 @@ function autoLogOneShotIncome(req) {
     desc,
     amount: req.price || 0,
     type: 'income',
+    source: 'caelos_legends',
     date: new Date().toISOString().split('T')[0],
     auto: true,
   });
   save('vf_expenses', expenses);
   renderExpenses();
   updateStats();
+  checkDealFires('caelos_legends', req.price || 0);
 }
 
 function tagCheckboxesHtml(selectedTags) {
@@ -6495,6 +7070,1143 @@ syncAllFromSheet();
     renderNowBar();
   };
 })();
+
+// ═══════════════════════════════════════════════
+// BUDGET TAB — DATA
+// ═══════════════════════════════════════════════
+
+let budgetBuckets   = load('vf_budget_buckets',   { taxes: 25, business: 40, family: 20, personal: 15 });
+let subscriptions   = load('vf_subscriptions',    []);
+let savingsGoals    = load('vf_savings_goals',    []);
+let artGoals        = load('vf_art_goals',        []);
+let deals           = load('vf_deals',            []);
+let budExpenses     = load('vf_bud_expenses',     []);  // Budget-tab managed expenses (NOT the old vf_expenses income entries)
+let artGoalArchive  = load('vf_art_goal_archive', []);
+let dismissedAlerts = load('vf_dismissed_alerts', {});
+
+// Undo stack
+let undoStack = [];
+
+function pushUndo(label, fn) {
+  undoStack.push({ label, fn });
+  showUndoToast(label);
+}
+
+function executeUndo() {
+  const item = undoStack.pop();
+  if (item) {
+    item.fn();
+    renderBudgetTab();
+    updateBudgetGlance();
+  }
+  hideUndoToast();
+}
+
+function showUndoToast(label) {
+  const t = document.getElementById('undo-toast');
+  document.getElementById('undo-toast-msg').textContent = label;
+  t.classList.add('visible');
+  clearTimeout(t._timer);
+  t._timer = setTimeout(() => { t.classList.remove('visible'); undoStack = []; }, 5000);
+}
+
+function hideUndoToast() {
+  document.getElementById('undo-toast').classList.remove('visible');
+}
+
+// ═══════════════════════════════════════════════
+// SPARKLE EFFECT
+// ═══════════════════════════════════════════════
+function spawnSparkles(x, y, count = 6) {
+  const container = document.getElementById('sparkle-container');
+  const emojis = ['✨','💰','🎵','⭐','🌟','💎','🎯'];
+  for (let i = 0; i < count; i++) {
+    const el = document.createElement('div');
+    el.className = 'sparkle';
+    el.textContent = emojis[Math.floor(Math.random() * emojis.length)];
+    el.style.left = (x + (Math.random() - 0.5) * 80) + 'px';
+    el.style.top  = (y + (Math.random() - 0.5) * 60) + 'px';
+    el.style.animationDuration = (0.5 + Math.random() * 0.4) + 's';
+    container.appendChild(el);
+    setTimeout(() => el.remove(), 900);
+  }
+}
+
+// ═══════════════════════════════════════════════
+// BUDGET CALCULATIONS
+// ═══════════════════════════════════════════════
+
+const SOURCE_LABELS = {
+  music_commission: 'Music Commissions',
+  map_commission:   'Map Commissions',
+  coaching:         'Coaching',
+  caelos_legends:   'Caelos Legends',
+  patreon:          'Patreon',
+  merch:            'Merch',
+  other:            'Other',
+};
+
+const SOURCE_COLORS = {
+  music_commission: '#3ecfcf',
+  map_commission:   '#d4af37',
+  coaching:         '#7c8cf8',
+  caelos_legends:   '#f08c55',
+  patreon:          '#f96854',
+  merch:            '#55cc88',
+  other:            '#888',
+};
+
+function getYearExpenses() {
+  const yr = new Date().getFullYear();
+  return budExpenses.filter(e => new Date(e.date).getFullYear() === yr);
+}
+
+function getYTDIncome() {
+  const yr = new Date().getFullYear();
+  return expenses.filter(e => e.type === 'income' && new Date(e.date).getFullYear() === yr)
+                 .reduce((s, e) => s + (e.amount || 0), 0);
+}
+
+function getMonthlyIncome() {
+  const now = new Date();
+  return expenses.filter(e => {
+    const d = new Date(e.date);
+    return e.type === 'income' && d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+  }).reduce((s, e) => s + (e.amount || 0), 0);
+}
+
+function getBusinessBucketMonthly() {
+  const monthly = getMonthlyIncome();
+  return monthly * (budgetBuckets.business / 100);
+}
+
+function getSubsMonthly() {
+  return subscriptions.reduce((s, sub) => s + (sub.amount || 0), 0);
+}
+
+function getCommittedAmount() {
+  const goalCommitted = savingsGoals.reduce((s, g) => s + (g.allocated || 0), 0);
+  const artCommitted  = artGoals.reduce((s, g) => s + (g.paid || 0) + (g.allocated || 0), 0);
+  return goalCommitted + artCommitted;
+}
+
+function getArtRunway() {
+  const budBiz = getBusinessBucketMonthly() - getSubsMonthly();
+  const artPct = 0.20; // 20% of business bucket available for art by default -- could be user-settable
+  return Math.max(0, budBiz * artPct);
+}
+
+function getBizNetYTD() {
+  const income = getYTDIncome() * (budgetBuckets.business / 100);
+  const exp    = getYearExpenses().reduce((s, e) => s + (e.amount || 0), 0);
+  return income - exp;
+}
+
+// ═══════════════════════════════════════════════
+// AMP KNOBS
+// ═══════════════════════════════════════════════
+
+const BUCKET_KEYS   = ['taxes', 'business', 'family', 'personal'];
+const BUCKET_LABELS = { taxes: 'Taxes', business: 'Business', family: 'Family', personal: 'Personal' };
+const BUCKET_COLORS = { taxes: '#e05555', business: '#3ecfcf', family: '#d4af37', personal: '#7c8cf8' };
+
+function snapHalf(v) {
+  return Math.round(v * 2) / 2;
+}
+
+function renderKnobs() {
+  const row = document.getElementById('amp-knobs-row');
+  if (!row) return;
+  const monthly = getMonthlyIncome();
+  const subsMo  = getSubsMonthly();
+
+  row.innerHTML = BUCKET_KEYS.map(key => {
+    const pct = budgetBuckets[key] || 0;
+    const dollars = monthly * (pct / 100);
+    const displayDollars = key === 'business'
+      ? `$${Math.max(0, dollars - subsMo).toFixed(0)} avail`
+      : `$${dollars.toFixed(0)}`;
+    return `
+    <div class="amp-knob-group">
+      <div class="amp-knob-label">${BUCKET_LABELS[key]}</div>
+      <div class="knob-svg-wrap" data-key="${key}" data-pct="${pct}"
+           onmousedown="startKnobDrag(event,'${key}')"
+           ondblclick="activateKnobInput('${key}')">
+        ${renderKnobSVG(pct, BUCKET_COLORS[key])}
+      </div>
+      <div class="knob-value-display" id="knob-val-${key}">${pct}%</div>
+      <input class="knob-input-field" id="knob-input-${key}" type="number" step="0.5" min="0" max="100"
+             value="${pct}"
+             onblur="commitKnobInput('${key}')"
+             onkeydown="if(event.key==='Enter')commitKnobInput('${key}')">
+      <div class="knob-dollar-display" id="knob-dol-${key}">${displayDollars}</div>
+    </div>`;
+  }).join('');
+
+  updateAmpTotalBar();
+}
+
+function renderKnobSVG(pct, color) {
+  // Knob: 270 degree arc, -135 to +135 degrees from bottom
+  const minAngle = -135;
+  const maxAngle =  135;
+  const angle = minAngle + (pct / 100) * (maxAngle - minAngle);
+  const rad = (angle - 90) * Math.PI / 180;
+  const cx = 32, cy = 32, r = 22;
+
+  // Arc path for filled portion
+  function polarToXY(deg) {
+    const r2 = (deg - 90) * Math.PI / 180;
+    return { x: cx + r * Math.cos(r2), y: cy + r * Math.sin(r2) };
+  }
+  const start = polarToXY(minAngle);
+  const end   = polarToXY(angle);
+  const largeArc = (angle - minAngle) > 180 ? 1 : 0;
+
+  // Indicator dot
+  const dotR = 26;
+  const dotRad = (angle - 90) * Math.PI / 180;
+  const dotX = cx + dotR * Math.cos(dotRad);
+  const dotY = cy + dotR * Math.sin(dotRad);
+
+  return `<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+    <!-- Outer ring (silver amp hardware) -->
+    <circle cx="32" cy="32" r="30" fill="none" stroke="#3a3f50" stroke-width="1.5"/>
+    <circle cx="32" cy="32" r="30" fill="url(#knob-grad-${color.replace('#','')})" opacity="0.08"/>
+    <defs>
+      <radialGradient id="knob-grad-${color.replace('#','')}" cx="40%" cy="35%">
+        <stop offset="0%" stop-color="#ffffff" stop-opacity="0.15"/>
+        <stop offset="100%" stop-color="#000000" stop-opacity="0"/>
+      </radialGradient>
+    </defs>
+    <!-- Track -->
+    <path d="M ${polarToXY(minAngle).x} ${polarToXY(minAngle).y} A ${r} ${r} 0 1 1 ${polarToXY(maxAngle).x} ${polarToXY(maxAngle).y}"
+          fill="none" stroke="rgba(255,255,255,0.07)" stroke-width="3" stroke-linecap="round"/>
+    <!-- Filled arc -->
+    ${pct > 0 ? `<path d="M ${start.x} ${start.y} A ${r} ${r} 0 ${largeArc} 1 ${end.x} ${end.y}"
+          fill="none" stroke="${color}" stroke-width="3" stroke-linecap="round" opacity="0.9"/>` : ''}
+    <!-- Knob body -->
+    <circle cx="32" cy="32" r="18" fill="#1a1e2a" stroke="#4a5060" stroke-width="1"/>
+    <circle cx="32" cy="32" r="17" fill="url(#knob-body-${color.replace('#','')})"/>
+    <defs>
+      <radialGradient id="knob-body-${color.replace('#','')}" cx="38%" cy="32%">
+        <stop offset="0%" stop-color="#2e3345"/>
+        <stop offset="100%" stop-color="#12151f"/>
+      </radialGradient>
+    </defs>
+    <!-- Silver indicator line -->
+    <line x1="32" y1="32" x2="${dotX}" y2="${dotY}" stroke="#c8ccd8" stroke-width="2" stroke-linecap="round" opacity="0.85"/>
+    <circle cx="${dotX}" cy="${dotY}" r="2" fill="#c8ccd8" opacity="0.9"/>
+    <!-- Center screw (amp hardware detail) -->
+    <circle cx="32" cy="32" r="2.5" fill="#3a3f50"/>
+    <circle cx="32" cy="32" r="1.2" fill="#c8ccd8" opacity="0.5"/>
+  </svg>`;
+}
+
+let _knobDragKey = null;
+let _knobDragStartY = 0;
+let _knobDragStartPct = 0;
+
+function startKnobDrag(e, key) {
+  _knobDragKey = key;
+  _knobDragStartY = e.clientY;
+  _knobDragStartPct = budgetBuckets[key] || 0;
+  document.addEventListener('mousemove', onKnobDrag);
+  document.addEventListener('mouseup', endKnobDrag);
+  e.preventDefault();
+}
+
+function onKnobDrag(e) {
+  if (!_knobDragKey) return;
+  const delta = (_knobDragStartY - e.clientY) * 0.4; // pixels -> pct, sensitivity
+  const raw = _knobDragStartPct + delta;
+  const snapped = snapHalf(Math.max(0, Math.min(100, raw)));
+  budgetBuckets[_knobDragKey] = snapped;
+  updateKnobDisplay(_knobDragKey, snapped);
+}
+
+function endKnobDrag(e) {
+  document.removeEventListener('mousemove', onKnobDrag);
+  document.removeEventListener('mouseup', endKnobDrag);
+  if (_knobDragKey) {
+    save('vf_budget_buckets', budgetBuckets);
+    renderKnobs();
+    updateBudgetGlance();
+    showPraise('bucketSave');
+    spawnSparkles(e.clientX, e.clientY, 4);
+  }
+  _knobDragKey = null;
+}
+
+function updateKnobDisplay(key, pct) {
+  const valEl = document.getElementById('knob-val-' + key);
+  const dolEl = document.getElementById('knob-dol-' + key);
+  if (valEl) valEl.textContent = pct + '%';
+  if (dolEl) {
+    const monthly = getMonthlyIncome();
+    const dollars = monthly * (pct / 100);
+    if (key === 'business') {
+      dolEl.textContent = '$' + Math.max(0, dollars - getSubsMonthly()).toFixed(0) + ' avail';
+    } else {
+      dolEl.textContent = '$' + dollars.toFixed(0);
+    }
+  }
+  // Update SVG
+  const wrap = document.querySelector(`.knob-svg-wrap[data-key="${key}"]`);
+  if (wrap) wrap.innerHTML = renderKnobSVG(pct, BUCKET_COLORS[key]);
+  updateAmpTotalBar();
+}
+
+function activateKnobInput(key) {
+  const display = document.getElementById('knob-val-' + key);
+  const input   = document.getElementById('knob-input-' + key);
+  if (display) display.style.display = 'none';
+  if (input) { input.style.display = 'block'; input.focus(); input.select(); }
+}
+
+function commitKnobInput(key) {
+  const input = document.getElementById('knob-input-' + key);
+  if (!input) return;
+  const raw = parseFloat(input.value);
+  if (!isNaN(raw)) {
+    const snapped = snapHalf(Math.max(0, Math.min(100, raw)));
+    budgetBuckets[key] = snapped;
+    save('vf_budget_buckets', budgetBuckets);
+  }
+  input.style.display = 'none';
+  const display = document.getElementById('knob-val-' + key);
+  if (display) display.style.display = 'block';
+  renderKnobs();
+  updateBudgetGlance();
+}
+
+function updateAmpTotalBar() {
+  const total = BUCKET_KEYS.reduce((s, k) => s + (budgetBuckets[k] || 0), 0);
+  const el  = document.getElementById('amp-total-pct');
+  const msg = document.getElementById('amp-total-msg');
+  if (!el) return;
+  el.textContent = total + '%';
+  const diff = total - 100;
+  if (Math.abs(diff) < 0.01) {
+    el.className = 'amp-total-val amp-ok';
+    if (msg) msg.textContent = '';
+  } else if (diff > 0) {
+    el.className = 'amp-total-val amp-warning';
+    if (msg) msg.textContent = `↑ ${diff.toFixed(1)}% over — something has to give`;
+  } else {
+    el.className = 'amp-total-val amp-warning';
+    if (msg) msg.textContent = `${Math.abs(diff).toFixed(1)}% unassigned`;
+  }
+  const monthEl = document.getElementById('amp-monthly-income');
+  if (monthEl) monthEl.textContent = '$' + getMonthlyIncome().toFixed(0);
+}
+
+// ═══════════════════════════════════════════════
+// SUBSCRIPTIONS
+// ═══════════════════════════════════════════════
+
+function renderSubscriptions() {
+  const list = document.getElementById('sub-list');
+  if (!list) return;
+  if (!subscriptions.length) {
+    list.innerHTML = '<div style="font-size:0.65rem;color:var(--text-ghost);padding:6px 0;">No subscriptions added.</div>';
+  } else {
+    list.innerHTML = subscriptions.map(s => `
+      <div class="sub-item">
+        <span class="sub-name">${esc(s.name)}</span>
+        <span class="sub-amt">-$${(s.amount||0).toFixed(2)}/mo</span>
+        <button class="sub-del" onclick="deleteSubscription('${s.id}')">✕</button>
+      </div>`).join('');
+  }
+  const total = getSubsMonthly();
+  const el = document.getElementById('sub-total');
+  if (el) el.textContent = '-$' + total.toFixed(2);
+}
+
+function openAddSubscription() {
+  showModal(`
+    <div class="modal bud-modal">
+      <div class="modal-title">Add Subscription</div>
+      <div class="bud-form-row">
+        <div class="bud-form-group">
+          <label class="bud-form-label">Service Name</label>
+          <input class="bud-form-input" id="sub-name-in" placeholder="e.g. Adobe CC, Squarespace..." autofocus>
+        </div>
+      </div>
+      <div class="bud-form-row">
+        <div class="bud-form-group">
+          <label class="bud-form-label">Monthly Cost ($)</label>
+          <input class="bud-form-input" id="sub-amt-in" type="number" step="0.01" placeholder="0.00">
+        </div>
+        <div class="bud-form-group">
+          <label class="bud-form-label">Category</label>
+          <select class="bud-form-input" id="sub-cat-in">
+            <option value="software">Software / Tools</option>
+            <option value="platform">Platform / Distribution</option>
+            <option value="storage">Storage / Hosting</option>
+            <option value="other">Other</option>
+          </select>
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-sm" onclick="closeModal()">Cancel</button>
+        <button class="btn btn-teal" onclick="saveSubscription()">Add Subscription</button>
+      </div>
+    </div>`);
+}
+
+function saveSubscription() {
+  const name = document.getElementById('sub-name-in').value.trim();
+  const amt  = parseFloat(document.getElementById('sub-amt-in').value);
+  const cat  = document.getElementById('sub-cat-in').value;
+  if (!name || isNaN(amt)) return;
+  subscriptions.push({ id: 'sub_' + Date.now(), name, amount: amt, category: cat });
+  save('vf_subscriptions', subscriptions);
+  closeModal();
+  renderSubscriptions();
+  renderKnobs();
+  updateBudgetGlance();
+  showPraise('expenseLogged');
+}
+
+function deleteSubscription(id) {
+  const sub = subscriptions.find(s => s.id === id);
+  const snap = [...subscriptions];
+  subscriptions = subscriptions.filter(s => s.id !== id);
+  save('vf_subscriptions', subscriptions);
+  renderSubscriptions();
+  renderKnobs();
+  updateBudgetGlance();
+  pushUndo(`Removed "${sub ? sub.name : 'subscription'}"`, () => {
+    subscriptions = snap;
+    save('vf_subscriptions', subscriptions);
+    renderSubscriptions();
+    renderKnobs();
+  });
+}
+
+// ═══════════════════════════════════════════════
+// BUDGET EXPENSES
+// ═══════════════════════════════════════════════
+
+const BUD_EXP_CATEGORIES = [
+  'Equipment', 'Software', 'Asset Pack', 'Game (stream)', 'Art Commission',
+  'Marketing', 'Hosting / Domain', 'Merch Production', 'Professional Services', 'Other'
+];
+
+function renderBudExpenses() {
+  const list = document.getElementById('bud-exp-list');
+  if (!list) return;
+  const yr   = new Date().getFullYear();
+  const yearEl = document.getElementById('bud-exp-year');
+  if (yearEl) yearEl.textContent = yr;
+  const yearly = getYearExpenses().sort((a, b) => new Date(b.date) - new Date(a.date));
+  list.innerHTML = yearly.length ? yearly.map(e => `
+    <div class="bud-expense-item">
+      <div class="bud-exp-info">
+        <div class="bud-exp-desc">${esc(e.desc)}</div>
+        <div class="bud-exp-meta">${e.date} &bull; ${esc(e.category || 'Other')}</div>
+      </div>
+      <span class="bud-exp-amt">-$${(e.amount||0).toFixed(2)}</span>
+      <button class="bud-exp-del" onclick="deleteBudExpense('${e.id}')">✕</button>
+    </div>`).join('') : '<div style="font-size:0.65rem;color:var(--text-ghost);padding:8px 0;">No expenses logged this year.</div>';
+
+  const net = getBizNetYTD();
+  const netEl = document.getElementById('bud-ytd-net');
+  if (netEl) {
+    netEl.textContent = (net >= 0 ? '+' : '') + '$' + Math.abs(net).toFixed(2);
+    netEl.className = 'ytd-net-val ' + (net >= 0 ? 'profit' : 'loss');
+  }
+  // Also update glance
+  updateBudgetGlance();
+}
+
+function openAddBudExpense() {
+  const today = new Date().toISOString().split('T')[0];
+  showModal(`
+    <div class="modal bud-modal">
+      <div class="modal-title">Log Business Expense</div>
+      <div class="bud-form-row">
+        <div class="bud-form-group" style="flex:2;">
+          <label class="bud-form-label">Description</label>
+          <input class="bud-form-input" id="bexp-desc" placeholder="What did you buy?" autofocus>
+        </div>
+      </div>
+      <div class="bud-form-row">
+        <div class="bud-form-group">
+          <label class="bud-form-label">Amount ($)</label>
+          <input class="bud-form-input" id="bexp-amt" type="number" step="0.01" placeholder="0.00">
+        </div>
+        <div class="bud-form-group">
+          <label class="bud-form-label">Category</label>
+          <select class="bud-form-input" id="bexp-cat">
+            ${BUD_EXP_CATEGORIES.map(c => `<option value="${c}">${c}</option>`).join('')}
+          </select>
+        </div>
+      </div>
+      <div class="bud-form-row">
+        <div class="bud-form-group">
+          <label class="bud-form-label">Date</label>
+          <input class="bud-form-input" id="bexp-date" type="date" value="${today}">
+        </div>
+        <div class="bud-form-group" style="flex:2;">
+          <label class="bud-form-label">Receipt / Notes (optional)</label>
+          <input class="bud-form-input" id="bexp-note" placeholder="Receipt #, store, context...">
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-sm" onclick="closeModal()">Cancel</button>
+        <button class="btn btn-teal" onclick="saveBudExpense()">Log Expense</button>
+      </div>
+    </div>`);
+}
+
+function saveBudExpense() {
+  const desc = document.getElementById('bexp-desc').value.trim();
+  const amt  = parseFloat(document.getElementById('bexp-amt').value);
+  const cat  = document.getElementById('bexp-cat').value;
+  const date = document.getElementById('bexp-date').value;
+  const note = document.getElementById('bexp-note').value.trim();
+  if (!desc || isNaN(amt)) return;
+  budExpenses.push({ id: 'bexp_' + Date.now(), desc, amount: amt, category: cat, date, note });
+  save('vf_bud_expenses', budExpenses);
+  closeModal();
+  renderBudExpenses();
+  showPraise('expenseLogged');
+}
+
+function deleteBudExpense(id) {
+  const snap = [...budExpenses];
+  const item = budExpenses.find(e => e.id === id);
+  budExpenses = budExpenses.filter(e => e.id !== id);
+  save('vf_bud_expenses', budExpenses);
+  renderBudExpenses();
+  pushUndo(`Removed expense "${item ? item.desc : ''}"`, () => {
+    budExpenses = snap;
+    save('vf_bud_expenses', budExpenses);
+    renderBudExpenses();
+  });
+}
+
+function exportBudgetTaxData() {
+  const yr = new Date().getFullYear();
+  const rows = getYearExpenses().map(e =>
+    `${e.date},"${e.desc}","${e.category || 'Other'}",-${(e.amount||0).toFixed(2)},"${e.note||''}"`
+  );
+  const csv = ['Date,Description,Category,Amount,Notes', ...rows].join('\n');
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `vorpal-forge-expenses-${yr}.csv`;
+  a.click();
+}
+
+// ═══════════════════════════════════════════════
+// SAVINGS GOALS
+// ═══════════════════════════════════════════════
+
+function renderGoals() {
+  const list = document.getElementById('goals-list');
+  const empty = document.getElementById('goals-empty');
+  if (!list) return;
+  if (!savingsGoals.length) {
+    list.innerHTML = '';
+    if (empty) empty.style.display = 'block';
+    return;
+  }
+  if (empty) empty.style.display = 'none';
+  list.innerHTML = savingsGoals.map(g => {
+    const pct = Math.min(100, g.target > 0 ? (g.allocated / g.target) * 100 : 0);
+    return `
+    <div class="goal-item">
+      <div class="goal-header">
+        <span class="goal-name">${esc(g.name)}</span>
+        <span class="goal-badge">${esc(g.bucket)}</span>
+      </div>
+      <div class="goal-amounts">
+        <span style="color:var(--teal);">$${(g.allocated||0).toFixed(2)} saved</span>
+        <span>of $${(g.target||0).toFixed(2)}</span>
+      </div>
+      <div class="goal-thermometer">
+        <div class="goal-thermo-fill" style="width:${pct}%;"></div>
+      </div>
+      <div class="goal-actions">
+        <input class="goal-alloc-input" id="galloc-${g.id}" type="number" step="0.01" placeholder="$0.00" min="0">
+        <button class="btn btn-teal btn-sm" style="font-size:0.6rem;padding:2px 9px;" onclick="allocateToGoal('${g.id}',event)">Allocate</button>
+        <button class="btn btn-sm" style="font-size:0.6rem;padding:2px 7px;" onclick="deleteGoal('${g.id}')">✕</button>
+      </div>
+    </div>`;
+  }).join('');
+  updateOverview();
+}
+
+function openAddGoal() {
+  showModal(`
+    <div class="modal bud-modal">
+      <div class="modal-title">New Savings Goal</div>
+      <div class="bud-form-row">
+        <div class="bud-form-group" style="flex:2;">
+          <label class="bud-form-label">Goal Name</label>
+          <input class="bud-form-input" id="goal-name-in" placeholder="e.g. Dream guitar, Studio monitor upgrade..." autofocus>
+        </div>
+      </div>
+      <div class="bud-form-row">
+        <div class="bud-form-group">
+          <label class="bud-form-label">Target Amount ($)</label>
+          <input class="bud-form-input" id="goal-target-in" type="number" step="0.01" placeholder="0.00">
+        </div>
+        <div class="bud-form-group">
+          <label class="bud-form-label">Funding Bucket</label>
+          <select class="bud-form-input" id="goal-bucket-in">
+            <option value="Business">Business</option>
+            <option value="Personal">Personal</option>
+            <option value="Family">Family</option>
+          </select>
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-sm" onclick="closeModal()">Cancel</button>
+        <button class="btn btn-teal" onclick="saveGoal()">Create Goal</button>
+      </div>
+    </div>`);
+}
+
+function saveGoal() {
+  const name   = document.getElementById('goal-name-in').value.trim();
+  const target = parseFloat(document.getElementById('goal-target-in').value);
+  const bucket = document.getElementById('goal-bucket-in').value;
+  if (!name || isNaN(target)) return;
+  savingsGoals.push({ id: 'goal_' + Date.now(), name, target, bucket, allocated: 0 });
+  save('vf_savings_goals', savingsGoals);
+  closeModal();
+  renderGoals();
+  showPraise('goalAlloc');
+}
+
+function allocateToGoal(id, evt) {
+  const g   = savingsGoals.find(x => x.id === id);
+  const inp = document.getElementById('galloc-' + id);
+  if (!g || !inp) return;
+  const amount = parseFloat(inp.value);
+  if (isNaN(amount) || amount <= 0) return;
+  const prevAllocated = g.allocated;
+  g.allocated = (g.allocated || 0) + amount;
+  inp.value = '';
+  save('vf_savings_goals', savingsGoals);
+  renderGoals();
+  updateBudgetGlance();
+  if (g.allocated >= g.target) {
+    showPraise('goalComplete');
+    spawnSparkles(evt.clientX, evt.clientY, 12);
+  } else {
+    showPraise('goalAlloc');
+    spawnSparkles(evt.clientX, evt.clientY, 5);
+  }
+  pushUndo(`Undone: +$${amount.toFixed(2)} to "${g.name}"`, () => {
+    g.allocated = prevAllocated;
+    save('vf_savings_goals', savingsGoals);
+    renderGoals();
+    updateBudgetGlance();
+  });
+}
+
+function deleteGoal(id) {
+  const snap = [...savingsGoals];
+  savingsGoals = savingsGoals.filter(g => g.id !== id);
+  save('vf_savings_goals', savingsGoals);
+  renderGoals();
+  pushUndo('Goal removed', () => {
+    savingsGoals = snap;
+    save('vf_savings_goals', savingsGoals);
+    renderGoals();
+  });
+}
+
+// ═══════════════════════════════════════════════
+// ART GOALS
+// ═══════════════════════════════════════════════
+
+function renderArtGoals() {
+  const list  = document.getElementById('art-goals-list');
+  const empty = document.getElementById('art-goals-empty');
+  const runway = document.getElementById('art-runway-display');
+  if (runway) runway.textContent = '$' + getArtRunway().toFixed(0);
+  if (!list) return;
+  if (!artGoals.length) {
+    list.innerHTML = '';
+    if (empty) empty.style.display = 'block';
+    return;
+  }
+  if (empty) empty.style.display = 'none';
+  list.innerHTML = artGoals.map(g => {
+    const totalPaid = g.paid || 0;
+    const pct = g.target > 0 ? Math.min(100, (totalPaid / g.target) * 100) : 0;
+    const remaining = Math.max(0, (g.target || 0) - totalPaid);
+    return `
+    <div class="art-goal-item">
+      <div class="art-goal-header">
+        <div>
+          <div class="art-goal-name">${esc(g.name)}</div>
+          ${g.note ? `<div class="art-goal-note">${esc(g.note)}</div>` : ''}
+        </div>
+        <button class="btn btn-sm" style="font-size:0.55rem;padding:2px 6px;" onclick="deleteArtGoal('${g.id}')">✕</button>
+      </div>
+      <div class="art-goal-amounts">
+        <span class="art-goal-paid-amt">$${totalPaid.toFixed(2)} paid</span>
+        <span class="art-goal-remain-amt">$${remaining.toFixed(2)} remaining</span>
+        <span style="color:var(--text-ghost);">of $${(g.target||0).toFixed(2)}</span>
+      </div>
+      <div class="art-goal-thermo">
+        <div class="art-goal-fill" style="width:${pct}%;"></div>
+      </div>
+      <div class="art-goal-actions">
+        <input class="goal-alloc-input" id="aalloc-${g.id}" type="number" step="0.01" placeholder="$0.00" min="0" style="max-width:80px;">
+        <button class="btn btn-sm" style="font-size:0.6rem;padding:2px 8px;border-color:var(--gold);color:var(--gold);" onclick="payArtGoal('${g.id}',event)">Mark Paid</button>
+        ${totalPaid >= (g.target||0) && g.target > 0 ? `<button class="btn btn-teal btn-sm" style="font-size:0.6rem;padding:2px 8px;" onclick="archiveArtGoal('${g.id}',event)">Archive</button>` : ''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function openAddArtGoal() {
+  showModal(`
+    <div class="modal bud-modal">
+      <div class="modal-title">New Art Goal</div>
+      <div class="bud-form-row">
+        <div class="bud-form-group" style="flex:2;">
+          <label class="bud-form-label">Project / Event</label>
+          <input class="bud-form-input" id="ag-name-in" placeholder="e.g. Jaq'tuun reveal art, stream overlay pack..." autofocus>
+        </div>
+      </div>
+      <div class="bud-form-row">
+        <div class="bud-form-group">
+          <label class="bud-form-label">Budget Target ($)</label>
+          <input class="bud-form-input" id="ag-target-in" type="number" step="0.01" placeholder="0.00">
+        </div>
+      </div>
+      <div class="bud-form-row">
+        <div class="bud-form-group" style="flex:2;">
+          <label class="bud-form-label">Notes / Context</label>
+          <input class="bud-form-input" id="ag-note-in" placeholder="What is this art for? Any deadline?">
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-sm" onclick="closeModal()">Cancel</button>
+        <button class="btn btn-sm" style="border-color:var(--gold);color:var(--gold);" onclick="saveArtGoal()">Create Art Goal</button>
+      </div>
+    </div>`);
+}
+
+function saveArtGoal() {
+  const name   = document.getElementById('ag-name-in').value.trim();
+  const target = parseFloat(document.getElementById('ag-target-in').value);
+  const note   = document.getElementById('ag-note-in').value.trim();
+  if (!name || isNaN(target)) return;
+  artGoals.push({ id: 'ag_' + Date.now(), name, target, note, paid: 0 });
+  save('vf_art_goals', artGoals);
+  closeModal();
+  renderArtGoals();
+}
+
+function payArtGoal(id, evt) {
+  const g   = artGoals.find(x => x.id === id);
+  const inp = document.getElementById('aalloc-' + id);
+  if (!g || !inp) return;
+  const amount = parseFloat(inp.value);
+  if (isNaN(amount) || amount <= 0) return;
+  const prevPaid = g.paid || 0;
+  g.paid = prevPaid + amount;
+  inp.value = '';
+  // Also log to budget expenses for tax records
+  budExpenses.push({
+    id: 'bexp_' + Date.now(),
+    desc: `Art commission payment: ${g.name}`,
+    amount,
+    category: 'Art Commission',
+    date: new Date().toISOString().split('T')[0],
+    note: `Art goal payment (${g.paid >= g.target ? 'final' : 'partial'})`,
+  });
+  save('vf_art_goals', artGoals);
+  save('vf_bud_expenses', budExpenses);
+  renderArtGoals();
+  renderBudExpenses();
+  updateBudgetGlance();
+  if (g.paid >= g.target && g.target > 0) {
+    showPraise('artPaid');
+    spawnSparkles(evt.clientX, evt.clientY, 10);
+  } else {
+    spawnSparkles(evt.clientX, evt.clientY, 4);
+  }
+  pushUndo(`Undone: $${amount.toFixed(2)} payment on "${g.name}"`, () => {
+    g.paid = prevPaid;
+    budExpenses = budExpenses.filter(e => !(e.desc.includes(g.name) && e.amount === amount));
+    save('vf_art_goals', artGoals);
+    save('vf_bud_expenses', budExpenses);
+    renderArtGoals();
+    renderBudExpenses();
+  });
+}
+
+function archiveArtGoal(id, evt) {
+  const g = artGoals.find(x => x.id === id);
+  if (!g) return;
+  artGoalArchive.push({ ...g, archivedAt: new Date().toISOString() });
+  artGoals = artGoals.filter(x => x.id !== id);
+  save('vf_art_goals', artGoals);
+  save('vf_art_goal_archive', artGoalArchive);
+  renderArtGoals();
+  spawnSparkles(evt.clientX, evt.clientY, 8);
+}
+
+function deleteArtGoal(id) {
+  const snap = [...artGoals];
+  artGoals = artGoals.filter(g => g.id !== id);
+  save('vf_art_goals', artGoals);
+  renderArtGoals();
+  pushUndo('Art goal removed', () => {
+    artGoals = snap;
+    save('vf_art_goals', artGoals);
+    renderArtGoals();
+  });
+}
+
+// ═══════════════════════════════════════════════
+// DEAL TRACKER
+// ═══════════════════════════════════════════════
+
+function renderDeals() {
+  const list  = document.getElementById('deal-list');
+  const empty = document.getElementById('deal-empty');
+  if (!list) return;
+  if (!deals.length) {
+    list.innerHTML = '';
+    if (empty) empty.style.display = 'block';
+    return;
+  }
+  if (empty) empty.style.display = 'none';
+  const today = new Date();
+  list.innerHTML = deals.map(d => {
+    const paused = d.paused;
+    const dueDate = d.dueDate ? new Date(d.dueDate) : null;
+    const daysUntil = dueDate ? Math.ceil((dueDate - today) / 86400000) : null;
+    let dueClass = '';
+    let dueText  = dueDate ? `Due: ${d.dueDate}` : 'No payment due date';
+    if (daysUntil !== null && !d.paidThisCycle) {
+      if (daysUntil === 0)      { dueClass = 'deal-due-today'; dueText = 'DUE TODAY'; }
+      else if (daysUntil <= 3)  { dueClass = 'deal-due-urgent'; dueText = `Due in ${daysUntil} day${daysUntil!==1?'s':''}!`; }
+    } else if (d.paidThisCycle) {
+      dueText = 'Paid this cycle ✓';
+    }
+    return `
+    <div class="deal-item ${paused ? 'deal-paused' : ''}">
+      <div class="deal-header">
+        <span class="deal-name">${esc(d.name)}</span>
+        <span class="deal-source-tag">${SOURCE_LABELS[d.source] || d.source}</span>
+      </div>
+      <div class="deal-pools">
+        ${(d.rules||[]).map(r => `
+          <div class="deal-pool-chip">
+            <strong>$${r.amount}</strong> → ${esc(r.pool)}
+            ${r.cap ? `(cap: $${r.cap})` : ''}
+          </div>`).join('')}
+      </div>
+      <div class="deal-due-row">
+        <span class="${dueClass}">${dueText}</span>
+        <div style="display:flex;gap:5px;">
+          ${!d.paidThisCycle && dueDate ? `<button class="btn btn-teal deal-toggle" onclick="markDealPaid('${d.id}')">Mark Paid</button>` : ''}
+          <button class="btn deal-toggle" onclick="toggleDeal('${d.id}')">${paused ? 'Resume' : 'Pause'}</button>
+          <button class="btn deal-toggle" style="color:var(--danger);border-color:var(--danger);" onclick="deleteDeal('${d.id}')">✕</button>
+        </div>
+      </div>
+      ${(d.pools||{}) && Object.keys(d.pools||{}).length ? `
+        <div style="margin-top:6px;font-size:0.6rem;color:var(--text-ghost);">
+          ${Object.entries(d.pools).map(([k,v]) => `${k}: <strong style="color:var(--teal);">$${(v||0).toFixed(2)}</strong>`).join(' &bull; ')}
+        </div>` : ''}
+    </div>`;
+  }).join('');
+}
+
+function openAddDeal() {
+  showModal(`
+    <div class="modal bud-modal" style="max-width:520px;">
+      <div class="modal-title">New Deal</div>
+      <div class="bud-form-row">
+        <div class="bud-form-group" style="flex:2;">
+          <label class="bud-form-label">Deal Name</label>
+          <input class="bud-form-input" id="deal-name-in" placeholder="e.g. Hatwolf Title Cards" autofocus>
+        </div>
+      </div>
+      <div class="bud-form-row">
+        <div class="bud-form-group">
+          <label class="bud-form-label">Triggers on Income From</label>
+          <select class="bud-form-input" id="deal-source-in">
+            ${Object.entries(SOURCE_LABELS).map(([v,l]) => `<option value="${v}">${l}</option>`).join('')}
+          </select>
+        </div>
+        <div class="bud-form-group">
+          <label class="bud-form-label">Payment Due Date</label>
+          <input class="bud-form-input" id="deal-due-in" type="date">
+        </div>
+      </div>
+      <div style="font-size:0.6rem;text-transform:uppercase;letter-spacing:0.1em;color:var(--text-ghost);margin:8px 0 6px;">Revenue Split Rules (per unit sold)</div>
+      <div id="deal-rules-container"></div>
+      <button class="btn btn-sm" style="font-size:0.6rem;margin-bottom:10px;" onclick="addDealRuleRow()">+ Add Rule</button>
+      <div class="modal-actions">
+        <button class="btn btn-sm" onclick="closeModal()">Cancel</button>
+        <button class="btn btn-teal" onclick="saveDeal()">Create Deal</button>
+      </div>
+    </div>`);
+  addDealRuleRow();
+}
+
+function addDealRuleRow() {
+  const c = document.getElementById('deal-rules-container');
+  if (!c) return;
+  const id = 'dr_' + Date.now();
+  const row = document.createElement('div');
+  row.className = 'deal-rule-row';
+  row.id = id;
+  row.innerHTML = `
+    <span style="font-size:0.65rem;color:var(--text-ghost);">$</span>
+    <input class="bud-form-input deal-rule-amt" type="number" step="0.01" placeholder="0.00" style="max-width:70px;">
+    <span style="font-size:0.65rem;color:var(--text-ghost);">→</span>
+    <input class="bud-form-input deal-rule-pool" placeholder="Pool name (e.g. Licensing)" style="flex:2;">
+    <span style="font-size:0.65rem;color:var(--text-ghost);">Cap</span>
+    <input class="bud-form-input deal-rule-cap" type="number" step="0.01" placeholder="none" style="max-width:70px;">
+    <button class="deal-rule-remove" onclick="document.getElementById('${id}').remove()">✕</button>`;
+  c.appendChild(row);
+}
+
+function saveDeal() {
+  const name   = document.getElementById('deal-name-in').value.trim();
+  const source = document.getElementById('deal-source-in').value;
+  const due    = document.getElementById('deal-due-in').value;
+  const ruleRows = document.querySelectorAll('.deal-rule-row');
+  const rules = [];
+  const pools = {};
+  ruleRows.forEach(row => {
+    const amt  = parseFloat(row.querySelector('.deal-rule-amt')?.value);
+    const pool = row.querySelector('.deal-rule-pool')?.value.trim();
+    const cap  = parseFloat(row.querySelector('.deal-rule-cap')?.value);
+    if (!isNaN(amt) && pool) {
+      rules.push({ amount: amt, pool, cap: isNaN(cap) ? null : cap });
+      pools[pool] = 0;
+    }
+  });
+  if (!name) return;
+  deals.push({ id: 'deal_' + Date.now(), name, source, dueDate: due || null, rules, pools, paused: false, paidThisCycle: false });
+  save('vf_deals', deals);
+  closeModal();
+  renderDeals();
+  renderDealAlerts();
+}
+
+function toggleDeal(id) {
+  const d = deals.find(x => x.id === id);
+  if (!d) return;
+  d.paused = !d.paused;
+  save('vf_deals', deals);
+  renderDeals();
+}
+
+function markDealPaid(id) {
+  const d = deals.find(x => x.id === id);
+  if (!d) return;
+  d.paidThisCycle = true;
+  save('vf_deals', deals);
+  renderDeals();
+  renderDealAlerts();
+}
+
+function deleteDeal(id) {
+  const snap = [...deals];
+  deals = deals.filter(d => d.id !== id);
+  save('vf_deals', deals);
+  renderDeals();
+  renderDealAlerts();
+  pushUndo('Deal removed', () => {
+    deals = snap;
+    save('vf_deals', deals);
+    renderDeals();
+    renderDealAlerts();
+  });
+}
+
+function checkDealFires(source, amount) {
+  deals.filter(d => d.source === source && !d.paused).forEach(d => {
+    (d.rules || []).forEach(r => {
+      const pool = r.pool;
+      const current = d.pools[pool] || 0;
+      const wouldAdd = r.amount;
+      if (r.cap && current >= r.cap) {
+        // Overflow -- just add to general pool labelled "overflow"
+        d.pools['Overflow (royalties)'] = (d.pools['Overflow (royalties)'] || 0) + wouldAdd;
+      } else {
+        d.pools[pool] = current + wouldAdd;
+      }
+    });
+  });
+  save('vf_deals', deals);
+  if (deals.some(d => d.source === source && !d.paused)) {
+    showPraise('dealFired');
+  }
+}
+
+// ═══════════════════════════════════════════════
+// DEAL ALERTS (Dashboard)
+// ═══════════════════════════════════════════════
+
+function renderDealAlerts() {
+  const strip = document.getElementById('deal-alerts-strip');
+  if (!strip) return;
+  const today = new Date();
+  const alerts = deals.filter(d => {
+    if (!d.dueDate || d.paused || d.paidThisCycle) return false;
+    const due = new Date(d.dueDate);
+    const days = Math.ceil((due - today) / 86400000);
+    return days <= 3;
+  });
+  if (!alerts.length) { strip.innerHTML = ''; return; }
+  strip.innerHTML = alerts.map(d => {
+    const due = new Date(d.dueDate);
+    const days = Math.ceil((due - today) / 86400000);
+    const isToday = days <= 0;
+    const key = d.id + '_' + d.dueDate;
+    if (dismissedAlerts[key]) return '';
+    return `
+      <div class="deal-alert ${isToday ? 'urgent' : 'warn'}" onclick="switchPageByName('budget')">
+        <span>${isToday ? '🔴' : '🟡'} <strong>${esc(d.name)}</strong> payment ${isToday ? 'due TODAY' : `due in ${days} day${days!==1?'s':''}`}</span>
+        <button class="deal-alert-dismiss" onclick="event.stopPropagation();dismissDealAlert('${d.id}','${d.dueDate}')">✕</button>
+      </div>`;
+  }).join('');
+}
+
+function dismissDealAlert(dealId, dueDate) {
+  const key = dealId + '_' + dueDate;
+  dismissedAlerts[key] = true;
+  save('vf_dismissed_alerts', dismissedAlerts);
+  renderDealAlerts();
+}
+
+// Reset paidThisCycle at start of new month (simple check on load)
+(function resetDealCycles() {
+  const lastReset = load('vf_deal_cycle_reset', '');
+  const thisMonth = new Date().toISOString().slice(0, 7);
+  if (lastReset !== thisMonth) {
+    deals.forEach(d => d.paidThisCycle = false);
+    save('vf_deals', deals);
+    save('vf_deal_cycle_reset', thisMonth);
+  }
+})();
+
+// ═══════════════════════════════════════════════
+// BUDGET OVERVIEW (source bars + liquid/committed)
+// ═══════════════════════════════════════════════
+
+function renderSourceBars() {
+  const container = document.getElementById('source-bars');
+  if (!container) return;
+  const yr = new Date().getFullYear();
+  const bySource = {};
+  expenses.filter(e => e.type === 'income' && new Date(e.date).getFullYear() === yr).forEach(e => {
+    const src = e.source || 'other';
+    bySource[src] = (bySource[src] || 0) + (e.amount || 0);
+  });
+  const total = Object.values(bySource).reduce((s, v) => s + v, 0);
+  if (!total) {
+    container.innerHTML = '<div style="font-size:0.65rem;color:var(--text-ghost);">No income logged yet this year.</div>';
+    return;
+  }
+  container.innerHTML = Object.entries(bySource).sort((a,b) => b[1]-a[1]).map(([src, amt]) => `
+    <div class="source-bar-row">
+      <span class="source-bar-label">${SOURCE_LABELS[src] || src}</span>
+      <div class="source-bar-track">
+        <div class="source-bar-fill" style="width:${(amt/total*100).toFixed(1)}%;background:${SOURCE_COLORS[src]||'#888'};"></div>
+      </div>
+      <span class="source-bar-val">$${amt.toFixed(0)}</span>
+    </div>`).join('');
+}
+
+function updateOverview() {
+  const monthly   = getMonthlyIncome();
+  const bizBucket = monthly * (budgetBuckets.business / 100);
+  const subsMo    = getSubsMonthly();
+  const committed = getCommittedAmount();
+  const liquid    = Math.max(0, bizBucket - subsMo - committed);
+  const totalGoalTarget = savingsGoals.reduce((s,g) => s + (g.target||0), 0);
+  const totalGoalSaved  = savingsGoals.reduce((s,g) => s + (g.allocated||0), 0);
+  const goalPct = totalGoalTarget > 0 ? Math.min(100, (totalGoalSaved/totalGoalTarget*100)).toFixed(0) : 0;
+
+  const ovLiq = document.getElementById('ov-liquid');
+  const ovCom = document.getElementById('ov-committed');
+  const ovArt = document.getElementById('ov-art-runway');
+  const ovGp  = document.getElementById('ov-goals-pct');
+  if (ovLiq) ovLiq.textContent = '$' + liquid.toFixed(2);
+  if (ovCom) ovCom.textContent = '$' + committed.toFixed(2);
+  if (ovArt) ovArt.textContent = '$' + getArtRunway().toFixed(2);
+  if (ovGp)  ovGp.textContent  = goalPct + '%';
+}
+
+// ═══════════════════════════════════════════════
+// DASHBOARD GLANCE WIDGET
+// ═══════════════════════════════════════════════
+
+function updateBudgetGlance() {
+  const net     = getBizNetYTD();
+  const monthly = getMonthlyIncome();
+  const bizMo   = monthly * (budgetBuckets.business / 100);
+  const subsMo  = getSubsMonthly();
+  const committed = getCommittedAmount();
+  const liquid  = Math.max(0, bizMo - subsMo - committed);
+
+  const netEl = document.getElementById('glance-net');
+  if (netEl) {
+    netEl.textContent = (net >= 0 ? '+' : '') + '$' + Math.abs(net).toFixed(2);
+    netEl.style.color = net >= 0 ? 'var(--success)' : 'var(--danger)';
+  }
+  const liqEl = document.getElementById('glance-liquid');
+  const comEl = document.getElementById('glance-committed');
+  if (liqEl) liqEl.textContent = '$' + liquid.toFixed(0);
+  if (comEl) comEl.textContent = '$' + committed.toFixed(0);
+
+  // Bucket mini bars
+  const bucketsEl = document.getElementById('glance-buckets');
+  if (bucketsEl) {
+    bucketsEl.innerHTML = BUCKET_KEYS.map(k => {
+      const pct = budgetBuckets[k] || 0;
+      const dollars = monthly * (pct / 100);
+      return `
+        <div class="glance-bucket-row">
+          <span class="glance-bucket-label">${BUCKET_LABELS[k]}</span>
+          <div class="glance-bucket-track"><div class="glance-bucket-fill" style="width:${pct}%;background:${BUCKET_COLORS[k]};"></div></div>
+          <span class="glance-bucket-val">$${dollars.toFixed(0)}</span>
+        </div>`;
+    }).join('');
+  }
+
+  renderDealAlerts();
+}
+
+// ═══════════════════════════════════════════════
+// MAIN RENDER
+// ═══════════════════════════════════════════════
+
+function renderBudgetTab() {
+  renderKnobs();
+  renderSubscriptions();
+  renderBudExpenses();
+  renderGoals();
+  renderArtGoals();
+  renderDeals();
+  renderSourceBars();
+  updateOverview();
+  updateBudgetGlance();
+  document.getElementById('bud-exp-year').textContent = new Date().getFullYear();
+}
+
+// Init glance on page load
+updateBudgetGlance();
+renderDealAlerts();
 
 </script>
 </body>
