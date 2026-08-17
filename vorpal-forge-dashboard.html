@@ -1636,16 +1636,98 @@
 
 /* Layout */
 .budget-layout {
-  display: grid;
-  grid-template-columns: 240px 1fr 300px;
-  grid-template-rows: auto auto;
+  display: flex;
+  flex-direction: column;
   gap: 14px;
   padding: 14px;
-  min-height: 80vh;
 }
-.budget-sidebar { display: flex; flex-direction: column; gap: 14px; grid-row: 1 / 3; }
+.budget-amp-row { width: 100%; }
+.budget-hero-row {
+  display: flex;
+  gap: 14px;
+  align-items: stretch;
+}
+.budget-hero-panel {
+  background: linear-gradient(135deg, #0f2218 0%, #0a1a10 100%);
+  border: 1px solid rgba(85,204,136,0.25);
+  border-radius: 10px;
+  padding: 20px 28px;
+  min-width: 260px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  box-shadow: 0 0 30px rgba(85,204,136,0.06);
+}
+.budget-hero-label {
+  font-size: 0.6rem;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  color: rgba(85,204,136,0.6);
+  margin-bottom: 6px;
+}
+.budget-hero-amount {
+  font-size: 2.8rem;
+  font-weight: 700;
+  color: var(--success);
+  line-height: 1;
+  margin-bottom: 6px;
+  text-shadow: 0 0 30px rgba(85,204,136,0.3);
+}
+.budget-hero-amount.warn { color: #f0a500; text-shadow: 0 0 30px rgba(240,165,0,0.3); }
+.budget-hero-amount.danger { color: var(--danger); text-shadow: 0 0 30px rgba(224,85,85,0.3); }
+.budget-hero-sub {
+  font-size: 0.62rem;
+  color: rgba(85,204,136,0.4);
+}
+.budget-bucket-pills {
+  flex: 1;
+  display: flex;
+  gap: 10px;
+  align-items: stretch;
+}
+.bucket-pill {
+  flex: 1;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  position: relative;
+  overflow: hidden;
+}
+.bucket-pill::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  border-radius: 8px 8px 0 0;
+}
+.bucket-pill-label {
+  font-size: 0.58rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--text-ghost);
+}
+.bucket-pill-amount {
+  font-size: 1.3rem;
+  font-weight: 700;
+  line-height: 1.1;
+}
+.bucket-pill-pct {
+  font-size: 0.6rem;
+  color: var(--text-ghost);
+}
+.budget-columns {
+  display: grid;
+  grid-template-columns: 240px 1fr 300px;
+  gap: 14px;
+  align-items: start;
+}
+.budget-sidebar { display: flex; flex-direction: column; gap: 14px; }
 .budget-center  { display: flex; flex-direction: column; gap: 14px; }
-.budget-right   { display: flex; flex-direction: column; gap: 14px; grid-row: 1 / 3; }
+.budget-right   { display: flex; flex-direction: column; gap: 14px; }
 
 /* Amp Panel */
 .amp-panel {
@@ -1674,50 +1756,53 @@
 .amp-knobs-row {
   display: flex;
   justify-content: space-around;
-  gap: 10px;
-  flex-wrap: wrap;
+  gap: 24px;
+  flex-wrap: nowrap;
+  align-items: flex-start;
 }
 .amp-knob-group {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
+  flex: 1;
 }
 .amp-knob-label {
-  font-size: 0.55rem;
+  font-size: 0.7rem;
   text-transform: uppercase;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.14em;
   color: var(--text-ghost);
+  font-weight: 600;
 }
 /* Knob SVG wrapper */
 .knob-svg-wrap {
   position: relative;
-  width: 64px;
-  height: 64px;
+  width: 96px;
+  height: 96px;
   cursor: ns-resize;
   user-select: none;
 }
-.knob-svg-wrap svg { width: 64px; height: 64px; display: block; }
+.knob-svg-wrap svg { width: 96px; height: 96px; display: block; }
 .knob-value-display {
-  font-size: 0.72rem;
+  font-size: 1.1rem;
   font-weight: 700;
   color: var(--teal);
   text-align: center;
-  min-width: 48px;
-}
-.knob-dollar-display {
-  font-size: 0.6rem;
-  color: var(--text-ghost);
-  text-align: center;
   min-width: 60px;
 }
+.knob-dollar-display {
+  font-size: 0.72rem;
+  color: var(--text-ghost);
+  text-align: center;
+  min-width: 80px;
+}
 .knob-input-field {
-  width: 48px;
+  width: 64px;
   background: transparent;
   border: none;
   border-bottom: 1px solid var(--border);
   color: var(--teal);
-  font-size: 0.72rem;
+  font-size: 1rem;
   font-weight: 700;
   text-align: center;
   outline: none;
@@ -2286,134 +2371,124 @@
   <div class="page-view" id="page-budget">
     <div class="budget-layout">
 
-      <!-- ══ LEFT SIDEBAR ══ -->
-      <div class="budget-sidebar">
-
-        <!-- Subscriptions -->
-        <div class="bud-panel">
-          <div class="bud-panel-header">
-            <span>Subscriptions</span>
-            <button class="btn btn-teal btn-sm" style="font-size:0.6rem;padding:2px 8px;" onclick="openAddSubscription()">+ Add</button>
-          </div>
-          <div class="bud-panel-body">
-            <div id="sub-list"></div>
-            <div class="sub-total-row">
-              <span style="color:var(--text-ghost);">Monthly total</span>
-              <span id="sub-total" style="color:var(--danger);">$0</span>
-            </div>
-          </div>
-        </div>
-
-        <!-- Expenses -->
-        <div class="bud-panel" style="flex:1;">
-          <div class="bud-panel-header">
-            <span>Expenses <span id="bud-exp-year" style="color:var(--teal);"></span></span>
-            <button class="btn btn-teal btn-sm" style="font-size:0.6rem;padding:2px 8px;" onclick="openAddBudExpense()">+ Add</button>
-          </div>
-          <div class="bud-panel-body" style="display:flex;flex-direction:column;height:calc(100% - 36px);box-sizing:border-box;">
-            <div id="bud-exp-list" style="flex:1;overflow-y:auto;max-height:280px;"></div>
-            <div class="ytd-net-bar">
-              <span class="ytd-net-label">Business Net YTD</span>
-              <span id="bud-ytd-net" class="ytd-net-val loss">$0</span>
-            </div>
-            <button class="btn btn-sm" style="margin-top:8px;font-size:0.6rem;" onclick="exportBudgetTaxData()">↓ Export Tax CSV</button>
-          </div>
-        </div>
-
-      </div>
-
-      <!-- ══ CENTER ══ -->
-      <div class="budget-center">
-
-        <!-- Amp Knobs Panel -->
+      <!-- ══ ROW 1: AMP PANEL FULL WIDTH ══ -->
+      <div class="budget-amp-row">
         <div class="amp-panel">
-          <div class="amp-panel-title">Bucket Allocation</div>
-          <div class="amp-knobs-row" id="amp-knobs-row">
-            <!-- Rendered by JS -->
-          </div>
+          <div class="amp-panel-title">Bucket Allocation — drag knobs to adjust, double-click to type</div>
+          <div class="amp-knobs-row" id="amp-knobs-row"><!-- Rendered by JS --></div>
           <div class="amp-total-bar">
-            <span>Total allocated: <span id="amp-total-pct" class="amp-total-val amp-ok">100%</span></span>
-            <span id="amp-total-msg" style="font-size:0.6rem;"></span>
-            <span style="color:var(--text-ghost);font-size:0.6rem;">Monthly income: <strong id="amp-monthly-income" style="color:var(--success);">$0</strong></span>
+            <span>Total allocated: <span id="amp-total-pct" class="amp-total-val amp-ok">100%</span> <span id="amp-total-msg" style="font-size:0.65rem;margin-left:8px;"></span></span>
+            <span style="color:var(--text-ghost);font-size:0.65rem;">All-time income logged: <strong id="amp-monthly-income" style="color:var(--success);">$0</strong></span>
           </div>
         </div>
+      </div>
 
-        <!-- Budget Overview / Trends -->
-        <div class="bud-panel">
-          <div class="bud-panel-header">
-            <span>Budget Overview</span>
-          </div>
-          <div class="bud-panel-body">
-            <div class="budget-overview-grid">
-              <div class="overview-stat">
-                <div class="overview-stat-label">Liquid (Business)</div>
-                <div class="overview-stat-val" id="ov-liquid" style="color:var(--success);">$0</div>
-              </div>
-              <div class="overview-stat">
-                <div class="overview-stat-label">Committed</div>
-                <div class="overview-stat-val" id="ov-committed" style="color:var(--gold);">$0</div>
-              </div>
-              <div class="overview-stat">
-                <div class="overview-stat-label">Art Runway</div>
-                <div class="overview-stat-val" id="ov-art-runway" style="color:var(--teal);">$0</div>
-              </div>
-              <div class="overview-stat">
-                <div class="overview-stat-label">Goals Progress</div>
-                <div class="overview-stat-val" id="ov-goals-pct" style="color:var(--text);">0%</div>
+      <!-- ══ ROW 2: AVAILABLE TO SPEND HERO ══ -->
+      <div class="budget-hero-row">
+        <div class="budget-hero-panel">
+          <div class="budget-hero-label">Available to Spend</div>
+          <div class="budget-hero-amount" id="hero-available">$0</div>
+          <div class="budget-hero-sub" id="hero-sub">Business bucket minus subscriptions and committed funds</div>
+        </div>
+        <div class="budget-bucket-pills" id="bucket-pills"><!-- Rendered by JS --></div>
+      </div>
+
+      <!-- ══ ROW 3: THREE COLUMNS ══ -->
+      <div class="budget-columns">
+
+        <!-- LEFT: Subscriptions + Expenses -->
+        <div class="budget-sidebar">
+
+          <div class="bud-panel">
+            <div class="bud-panel-header">
+              <span>Subscriptions</span>
+              <button class="btn btn-teal btn-sm" style="font-size:0.6rem;padding:2px 8px;" onclick="openAddSubscription()">+ Add</button>
+            </div>
+            <div class="bud-panel-body">
+              <div id="sub-list"></div>
+              <div class="sub-total-row">
+                <span style="color:var(--text-ghost);">Monthly total</span>
+                <span id="sub-total" style="color:var(--danger);">$0</span>
               </div>
             </div>
-            <div style="margin-top:14px;">
-              <div style="font-size:0.6rem;text-transform:uppercase;letter-spacing:0.1em;color:var(--text-ghost);margin-bottom:10px;">Income by Source (YTD)</div>
+          </div>
+
+          <div class="bud-panel" style="flex:1;">
+            <div class="bud-panel-header">
+              <span>Expenses <span id="bud-exp-year" style="color:var(--teal);"></span></span>
+              <button class="btn btn-teal btn-sm" style="font-size:0.6rem;padding:2px 8px;" onclick="openAddBudExpense()">+ Add</button>
+            </div>
+            <div class="bud-panel-body" style="display:flex;flex-direction:column;">
+              <div id="bud-exp-list" style="flex:1;overflow-y:auto;max-height:300px;"></div>
+              <div class="ytd-net-bar">
+                <span class="ytd-net-label">Business Net YTD</span>
+                <span id="bud-ytd-net" class="ytd-net-val loss">$0</span>
+              </div>
+              <button class="btn btn-sm" style="margin-top:8px;font-size:0.6rem;" onclick="exportBudgetTaxData()">↓ Export Tax CSV</button>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- CENTER: Overview + Deal Tracker -->
+        <div class="budget-center">
+
+          <div class="bud-panel">
+            <div class="bud-panel-header">
+              <span>Income by Source</span>
+              <button class="btn btn-sm" style="font-size:0.6rem;padding:2px 8px;" onclick="openRetagIncome()">Re-tag entries</button>
+            </div>
+            <div class="bud-panel-body">
               <div id="source-bars"></div>
+              <div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border);display:flex;justify-content:space-between;font-size:0.68rem;">
+                <span style="color:var(--text-ghost);">Goals funded</span>
+                <span id="ov-goals-pct" style="color:var(--teal);font-weight:700;">0%</span>
+              </div>
             </div>
           </div>
+
+          <div class="bud-panel">
+            <div class="bud-panel-header">
+              <span>Deal Tracker</span>
+              <button class="btn btn-teal btn-sm" style="font-size:0.6rem;padding:2px 8px;" onclick="openAddDeal()">+ New Deal</button>
+            </div>
+            <div class="bud-panel-body">
+              <div id="deal-list"></div>
+              <div id="deal-empty" class="empty-state" style="display:none;padding:20px;font-size:0.72rem;">No deals set up yet.</div>
+            </div>
+          </div>
+
         </div>
 
-        <!-- Deal Tracker -->
-        <div class="bud-panel">
-          <div class="bud-panel-header">
-            <span>Deal Tracker</span>
-            <button class="btn btn-teal btn-sm" style="font-size:0.6rem;padding:2px 8px;" onclick="openAddDeal()">+ New Deal</button>
+        <!-- RIGHT: Goals + Art Goals -->
+        <div class="budget-right">
+
+          <div class="bud-panel">
+            <div class="bud-panel-header">
+              <span>Savings Goals</span>
+              <button class="btn btn-teal btn-sm" style="font-size:0.6rem;padding:2px 8px;" onclick="openAddGoal()">+ New Goal</button>
+            </div>
+            <div class="bud-panel-body">
+              <div id="goals-list"></div>
+              <div id="goals-empty" class="empty-state" style="display:none;padding:20px;font-size:0.72rem;">No goals yet. Dream guitar at 0% is still a dream guitar.</div>
+            </div>
           </div>
-          <div class="bud-panel-body">
-            <div id="deal-list"></div>
-            <div id="deal-empty" class="empty-state" style="display:none;padding:20px;font-size:0.72rem;">No deals set up yet. Use revenue-sharing arrangements with collaborators here.</div>
+
+          <div class="bud-panel">
+            <div class="bud-panel-header">
+              <span>Art Goals</span>
+              <button class="btn btn-sm" style="font-size:0.6rem;padding:2px 8px;border-color:var(--gold);color:var(--gold);" onclick="openAddArtGoal()">+ New Art Goal</button>
+            </div>
+            <div class="bud-panel-body">
+              <div id="art-goals-list"></div>
+              <div id="art-goals-empty" class="empty-state" style="display:none;padding:20px;font-size:0.72rem;">No active art goals. Budget for upcoming commissions here.</div>
+            </div>
           </div>
+
         </div>
 
-      </div>
-
-      <!-- ══ RIGHT SIDEBAR ══ -->
-      <div class="budget-right">
-
-        <!-- Savings Goals -->
-        <div class="bud-panel">
-          <div class="bud-panel-header">
-            <span>Savings Goals</span>
-            <button class="btn btn-teal btn-sm" style="font-size:0.6rem;padding:2px 8px;" onclick="openAddGoal()">+ New Goal</button>
-          </div>
-          <div class="bud-panel-body">
-            <div id="goals-list"></div>
-            <div id="goals-empty" class="empty-state" style="display:none;padding:20px;font-size:0.72rem;">No goals yet. Dream guitar at 0% is still a dream guitar.</div>
-          </div>
-        </div>
-
-        <!-- Art Goals -->
-        <div class="bud-panel">
-          <div class="bud-panel-header">
-            <span>Art Goals</span>
-            <span style="font-size:0.58rem;color:var(--text-ghost);">Runway: <strong id="art-runway-display" style="color:var(--teal);">$0</strong></span>
-            <button class="btn btn-sm" style="font-size:0.6rem;padding:2px 8px;border-color:var(--gold);color:var(--gold);" onclick="openAddArtGoal()">+ New Art Goal</button>
-          </div>
-          <div class="bud-panel-body">
-            <div id="art-goals-list"></div>
-            <div id="art-goals-empty" class="empty-state" style="display:none;padding:20px;font-size:0.72rem;">No active art goals. Budget for upcoming commissions here.</div>
-          </div>
-        </div>
-
-      </div>
-
-    </div>
+      </div><!-- /budget-columns -->
+    </div><!-- /budget-layout -->
   </div>
   <!-- /BUDGET PAGE -->
 
@@ -7120,6 +7195,16 @@ function getYearExpenses() {
   return budExpenses.filter(e => new Date(e.date).getFullYear() === yr);
 }
 
+// ── RUNNING BALANCE MODEL ──
+// All income ever logged accumulates. Buckets hold running totals.
+// "Available to Spend" = business bucket running balance minus committed funds.
+// This means September's income is still visible in December. No monthly resets.
+
+function getAllTimeIncome() {
+  return expenses.filter(e => e.type === 'income')
+                 .reduce((s, e) => s + (e.amount || 0), 0);
+}
+
 function getYTDIncome() {
   const yr = new Date().getFullYear();
   return expenses.filter(e => e.type === 'income' && new Date(e.date).getFullYear() === yr)
@@ -7127,6 +7212,7 @@ function getYTDIncome() {
 }
 
 function getMonthlyIncome() {
+  // Still used for display context -- "you averaged $X/mo" type info
   const now = new Date();
   return expenses.filter(e => {
     const d = new Date(e.date);
@@ -7134,9 +7220,9 @@ function getMonthlyIncome() {
   }).reduce((s, e) => s + (e.amount || 0), 0);
 }
 
-function getBusinessBucketMonthly() {
-  const monthly = getMonthlyIncome();
-  return monthly * (budgetBuckets.business / 100);
+function getBucketBalance(key) {
+  // Running balance: all-time income * bucket pct
+  return getAllTimeIncome() * ((budgetBuckets[key] || 0) / 100);
 }
 
 function getSubsMonthly() {
@@ -7149,16 +7235,23 @@ function getCommittedAmount() {
   return goalCommitted + artCommitted;
 }
 
-function getArtRunway() {
-  const budBiz = getBusinessBucketMonthly() - getSubsMonthly();
-  const artPct = 0.20; // 20% of business bucket available for art by default -- could be user-settable
-  return Math.max(0, budBiz * artPct);
+function getAvailableToSpend() {
+  // Business bucket running balance, minus subscriptions accrued, minus committed funds
+  const bizBalance  = getBucketBalance('business');
+  const totalExpenses = budExpenses.reduce((s, e) => s + (e.amount || 0), 0);
+  const committed   = getCommittedAmount();
+  return Math.max(0, bizBalance - totalExpenses - committed);
 }
 
 function getBizNetYTD() {
-  const income = getYTDIncome() * (budgetBuckets.business / 100);
+  const income = getYTDIncome() * ((budgetBuckets.business || 40) / 100);
   const exp    = getYearExpenses().reduce((s, e) => s + (e.amount || 0), 0);
   return income - exp;
+}
+
+// ── KNOB TOTAL BAR (uses all-time for context) ──
+function getBusinessBucketMonthly() {
+  return getMonthlyIncome() * ((budgetBuckets.business || 40) / 100);
 }
 
 // ═══════════════════════════════════════════════
@@ -7174,15 +7267,14 @@ function snapHalf(v) {
 function renderKnobs() {
   const row = document.getElementById('amp-knobs-row');
   if (!row) return;
-  const monthly = getMonthlyIncome();
-  const subsMo  = getSubsMonthly();
+  const allTime = getAllTimeIncome();
 
   row.innerHTML = BUCKET_KEYS.map(key => {
-    const pct = budgetBuckets[key] || 0;
-    const dollars = monthly * (pct / 100);
+    const pct     = budgetBuckets[key] || 0;
+    const balance = getBucketBalance(key);
     const displayDollars = key === 'business'
-      ? `$${Math.max(0, dollars - subsMo).toFixed(0)} avail`
-      : `$${dollars.toFixed(0)}`;
+      ? `$${Math.max(0, balance - budExpenses.reduce((s,e)=>s+(e.amount||0),0)).toFixed(0)} net`
+      : `$${balance.toFixed(0)}`;
     return `
     <div class="amp-knob-group">
       <div class="amp-knob-label">${BUCKET_LABELS[key]}</div>
@@ -7201,6 +7293,7 @@ function renderKnobs() {
   }).join('');
 
   updateAmpTotalBar();
+  renderBucketPills();
 }
 
 function renderKnobSVG(pct, color) {
@@ -7293,12 +7386,12 @@ function updateKnobDisplay(key, pct) {
   const dolEl = document.getElementById('knob-dol-' + key);
   if (valEl) valEl.textContent = pct + '%';
   if (dolEl) {
-    const monthly = getMonthlyIncome();
-    const dollars = monthly * (pct / 100);
+    const balance = getBucketBalance(key);
     if (key === 'business') {
-      dolEl.textContent = '$' + Math.max(0, dollars - getSubsMonthly()).toFixed(0) + ' avail';
+      const net = Math.max(0, balance - budExpenses.reduce((s,e)=>s+(e.amount||0),0));
+      dolEl.textContent = '$' + net.toFixed(0) + ' net';
     } else {
-      dolEl.textContent = '$' + dollars.toFixed(0);
+      dolEl.textContent = '$' + balance.toFixed(0);
     }
   }
   // Update SVG
@@ -7348,7 +7441,7 @@ function updateAmpTotalBar() {
     if (msg) msg.textContent = `${Math.abs(diff).toFixed(1)}% unassigned`;
   }
   const monthEl = document.getElementById('amp-monthly-income');
-  if (monthEl) monthEl.textContent = '$' + getMonthlyIncome().toFixed(0);
+  if (monthEl) monthEl.textContent = '$' + getAllTimeIncome().toFixed(0);
 }
 
 // ═══════════════════════════════════════════════
@@ -8053,18 +8146,49 @@ function dismissDealAlert(dealId, dueDate) {
 // BUDGET OVERVIEW (source bars + liquid/committed)
 // ═══════════════════════════════════════════════
 
+function renderBucketPills() {
+  const container = document.getElementById('bucket-pills');
+  if (!container) return;
+  const allTime = getAllTimeIncome();
+  container.innerHTML = BUCKET_KEYS.map(key => {
+    const pct     = budgetBuckets[key] || 0;
+    const balance = getBucketBalance(key);
+    const color   = BUCKET_COLORS[key];
+    return `
+      <div class="bucket-pill">
+        <div class="bucket-pill" style="border-top-color:${color};--pill-color:${color};">
+          <style>.bucket-pill:has(#bp-${key})::before{background:${color};}</style>
+        </div>
+        <div class="bucket-pill-label">${BUCKET_LABELS[key]}</div>
+        <div class="bucket-pill-amount" style="color:${color};" id="bp-${key}">$${balance.toFixed(2)}</div>
+        <div class="bucket-pill-pct">${pct}% of all income</div>
+      </div>`;
+  }).join('');
+  // Simpler inline approach since CSS :has isn't reliable everywhere
+  container.innerHTML = BUCKET_KEYS.map(key => {
+    const pct     = budgetBuckets[key] || 0;
+    const balance = getBucketBalance(key);
+    const color   = BUCKET_COLORS[key];
+    return `
+      <div class="bucket-pill" style="border-top:3px solid ${color};">
+        <div class="bucket-pill-label">${BUCKET_LABELS[key]}</div>
+        <div class="bucket-pill-amount" style="color:${color};">$${balance.toFixed(2)}</div>
+        <div class="bucket-pill-pct">${pct}% of all income</div>
+      </div>`;
+  }).join('');
+}
+
 function renderSourceBars() {
   const container = document.getElementById('source-bars');
   if (!container) return;
-  const yr = new Date().getFullYear();
   const bySource = {};
-  expenses.filter(e => e.type === 'income' && new Date(e.date).getFullYear() === yr).forEach(e => {
+  expenses.filter(e => e.type === 'income').forEach(e => {
     const src = e.source || 'other';
     bySource[src] = (bySource[src] || 0) + (e.amount || 0);
   });
   const total = Object.values(bySource).reduce((s, v) => s + v, 0);
   if (!total) {
-    container.innerHTML = '<div style="font-size:0.65rem;color:var(--text-ghost);">No income logged yet this year.</div>';
+    container.innerHTML = '<div style="font-size:0.65rem;color:var(--text-ghost);">No income logged yet.</div>';
     return;
   }
   container.innerHTML = Object.entries(bySource).sort((a,b) => b[1]-a[1]).map(([src, amt]) => `
@@ -8077,59 +8201,94 @@ function renderSourceBars() {
     </div>`).join('');
 }
 
+function openRetagIncome() {
+  const untagged = expenses.filter(e => e.type === 'income' && (!e.source || e.source === 'other'));
+  const all = expenses.filter(e => e.type === 'income');
+  showModal(`
+    <div class="modal bud-modal" style="max-width:520px;max-height:80vh;overflow-y:auto;">
+      <div class="modal-title">Re-tag Income Entries</div>
+      <div style="font-size:0.68rem;color:var(--text-ghost);margin-bottom:12px;">
+        ${untagged.length} untagged entries. Click a source to assign it.
+      </div>
+      ${all.slice().reverse().map(e => `
+        <div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border);">
+          <div style="flex:1;min-width:0;">
+            <div style="font-size:0.7rem;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(e.desc)}</div>
+            <div style="font-size:0.58rem;color:var(--text-ghost);">${e.date} &bull; $${(e.amount||0).toFixed(2)}</div>
+          </div>
+          <select class="bud-form-input" style="font-size:0.62rem;padding:3px 6px;width:140px;" onchange="retagIncomeEntry('${e.id}',this.value)">
+            ${Object.entries(SOURCE_LABELS).map(([v,l]) =>
+              `<option value="${v}" ${(e.source||'other')===v?'selected':''}>${l}</option>`
+            ).join('')}
+          </select>
+        </div>`).join('')}
+      <div class="modal-actions" style="margin-top:12px;">
+        <button class="btn btn-teal" onclick="closeModal();renderBudgetTab();">Done</button>
+      </div>
+    </div>`);
+}
+
+function retagIncomeEntry(id, source) {
+  const e = expenses.find(x => x.id === id);
+  if (!e) return;
+  e.source = source;
+  save('vf_expenses', expenses);
+}
+
 function updateOverview() {
-  const monthly   = getMonthlyIncome();
-  const bizBucket = monthly * (budgetBuckets.business / 100);
-  const subsMo    = getSubsMonthly();
-  const committed = getCommittedAmount();
-  const liquid    = Math.max(0, bizBucket - subsMo - committed);
+  const available  = getAvailableToSpend();
+  const committed  = getCommittedAmount();
   const totalGoalTarget = savingsGoals.reduce((s,g) => s + (g.target||0), 0);
   const totalGoalSaved  = savingsGoals.reduce((s,g) => s + (g.allocated||0), 0);
   const goalPct = totalGoalTarget > 0 ? Math.min(100, (totalGoalSaved/totalGoalTarget*100)).toFixed(0) : 0;
-
-  const ovLiq = document.getElementById('ov-liquid');
-  const ovCom = document.getElementById('ov-committed');
-  const ovArt = document.getElementById('ov-art-runway');
-  const ovGp  = document.getElementById('ov-goals-pct');
-  if (ovLiq) ovLiq.textContent = '$' + liquid.toFixed(2);
-  if (ovCom) ovCom.textContent = '$' + committed.toFixed(2);
-  if (ovArt) ovArt.textContent = '$' + getArtRunway().toFixed(2);
-  if (ovGp)  ovGp.textContent  = goalPct + '%';
+  const ovGp = document.getElementById('ov-goals-pct');
+  if (ovGp) ovGp.textContent = goalPct + '%';
 }
 
-// ═══════════════════════════════════════════════
-// DASHBOARD GLANCE WIDGET
-// ═══════════════════════════════════════════════
-
 function updateBudgetGlance() {
-  const net     = getBizNetYTD();
-  const monthly = getMonthlyIncome();
-  const bizMo   = monthly * (budgetBuckets.business / 100);
-  const subsMo  = getSubsMonthly();
+  if (typeof getBucketBalance !== 'function') return;
+  const available = getAvailableToSpend();
+  const allTime   = getAllTimeIncome();
   const committed = getCommittedAmount();
-  const liquid  = Math.max(0, bizMo - subsMo - committed);
 
-  const netEl = document.getElementById('glance-net');
+  // Hero number on budget tab
+  const heroEl  = document.getElementById('hero-available');
+  const heroSub = document.getElementById('hero-sub');
+  if (heroEl) {
+    heroEl.textContent = '$' + available.toFixed(2);
+    heroEl.className = 'budget-hero-amount' + (available > 100 ? '' : available > 0 ? ' warn' : ' danger');
+  }
+  if (heroSub) {
+    const subsMo = getSubsMonthly();
+    heroSub.textContent = `Business bucket ($${getBucketBalance('business').toFixed(0)}) minus expenses and committed funds`;
+  }
+
+  // Bucket pills
+  renderBucketPills();
+
+  // Dashboard glance widget
+  const netYTD = getBizNetYTD();
+  const netEl  = document.getElementById('glance-net');
   if (netEl) {
-    netEl.textContent = (net >= 0 ? '+' : '') + '$' + Math.abs(net).toFixed(2);
-    netEl.style.color = net >= 0 ? 'var(--success)' : 'var(--danger)';
+    netEl.textContent = (netYTD >= 0 ? '+' : '') + '$' + Math.abs(netYTD).toFixed(2);
+    netEl.style.color = netYTD >= 0 ? 'var(--success)' : 'var(--danger)';
   }
   const liqEl = document.getElementById('glance-liquid');
   const comEl = document.getElementById('glance-committed');
-  if (liqEl) liqEl.textContent = '$' + liquid.toFixed(0);
+  if (liqEl) liqEl.textContent = '$' + available.toFixed(0);
   if (comEl) comEl.textContent = '$' + committed.toFixed(0);
 
-  // Bucket mini bars
+  // Bucket mini bars on dashboard glance
   const bucketsEl = document.getElementById('glance-buckets');
   if (bucketsEl) {
     bucketsEl.innerHTML = BUCKET_KEYS.map(k => {
-      const pct = budgetBuckets[k] || 0;
-      const dollars = monthly * (pct / 100);
+      const pct     = budgetBuckets[k] || 0;
+      const balance = getBucketBalance(k);
       return `
         <div class="glance-bucket-row">
           <span class="glance-bucket-label">${BUCKET_LABELS[k]}</span>
           <div class="glance-bucket-track"><div class="glance-bucket-fill" style="width:${pct}%;background:${BUCKET_COLORS[k]};"></div></div>
-          <span class="glance-bucket-val">$${dollars.toFixed(0)}</span>
+          <span class="glance-bucket-val">$${balance.toFixed(0)}</span>
         </div>`;
     }).join('');
   }
@@ -8143,6 +8302,7 @@ function updateBudgetGlance() {
 
 function renderBudgetTab() {
   renderKnobs();
+  renderBucketPills();
   renderSubscriptions();
   renderBudExpenses();
   renderGoals();
@@ -8151,7 +8311,8 @@ function renderBudgetTab() {
   renderSourceBars();
   updateOverview();
   updateBudgetGlance();
-  document.getElementById('bud-exp-year').textContent = new Date().getFullYear();
+  const yearEl = document.getElementById('bud-exp-year');
+  if (yearEl) yearEl.textContent = new Date().getFullYear();
 }
 
 // Init glance on page load -- deferred so all lets are initialized first
