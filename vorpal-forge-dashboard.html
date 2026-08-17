@@ -7286,7 +7286,7 @@ function getAvailableToSpend() {
   const totalExpenses = budExpenses.reduce((s, e) => s + (e.amount || 0), 0);
   const committed     = getCommittedAmount();
   const subsDrain     = getSubsMonthly();
-  return Math.max(0, bizBalance - totalExpenses - committed - subsDrain);
+  return bizBalance - totalExpenses - committed - subsDrain;
 }
 
 function getBizNetYTD() {
@@ -8593,7 +8593,7 @@ function updateBudgetGlance() {
   const heroSub = document.getElementById('hero-sub');
   const heroMsg = document.getElementById('hero-encouragement');
   if (heroEl) {
-    heroEl.textContent = '$' + available.toFixed(2);
+    heroEl.textContent = (available < 0 ? '-$' : '$') + Math.abs(available).toFixed(2);
     heroEl.className = 'budget-hero-amount' + (available > 100 ? '' : available > 0 ? ' warn' : ' danger');
   }
   if (heroSub) {
