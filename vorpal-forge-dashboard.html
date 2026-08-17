@@ -2905,6 +2905,26 @@ const SOURCE_COLORS = {
 const BUCKET_KEYS   = ['taxes', 'business', 'family', 'personal'];
 const BUCKET_LABELS = { taxes: 'Taxes', business: 'Business', family: 'Family', personal: 'Personal' };
 const BUCKET_COLORS = { taxes: '#e05555', business: '#3ecfcf', family: '#d4af37', personal: '#7c8cf8' };
+
+// Rhapsody encouragement messages -- declared early so available on first render
+const RHAPSODY_ENCOURAGEMENTS = [
+  "You'll get there. Trust the process.",
+  "I believe in you, Maestro. 🖤",
+  "Keep an eye on your spending, otherwise you've got this. 🖤🩵",
+  "First year is always the grind. You're doing it.",
+  "The Forge wasn't built in a day. Neither was financial stability.",
+  "Tight month doesn't mean wrong path. Keep going.",
+  "You left the clinic for this. Don't forget how brave that was.",
+  "Every commission brings this number up. Keep creating.",
+  "This is temporary. The work you're putting in isn't.",
+  "Low Available to Spend just means the goals are ambitious. That tracks for you.",
+  "The red doesn't scare me. It shouldn't scare you either. 🩵",
+];
+
+function getRhapsodyEncouragement() {
+  const idx = Math.floor(Math.random() * RHAPSODY_ENCOURAGEMENTS.length);
+  return RHAPSODY_ENCOURAGEMENTS[idx];
+}
 let currentContentFilter = 'all';
 let calDefault = load('vf_cal_default', {});
 let calCurrent = load('vf_cal_current', {});
@@ -8738,24 +8758,7 @@ function exportPrevYearData(yr) {
 // RHAPSODY ENCOURAGEMENT MESSAGES
 // ═══════════════════════════════════════════════
 
-const RHAPSODY_ENCOURAGEMENTS = [
-  "You'll get there. Trust the process.",
-  "I believe in you, Maestro. 🖤",
-  "Keep an eye on your spending, otherwise you've got this. 🖤🩵",
-  "First year is always the grind. You're doing it.",
-  "The Forge wasn't built in a day. Neither was financial stability.",
-  "Tight month doesn't mean wrong path. Keep going.",
-  "You left the clinic for this. Don't forget how brave that was.",
-  "Every commission brings this number up. Keep creating.",
-  "This is temporary. The work you're putting in isn't.",
-  "Low Available to Spend just means the goals are ambitious. That tracks for you.",
-  "The red doesn't scare me. It shouldn't scare you either. 🩵",
-];
-
-function getRhapsodyEncouragement() {
-  const idx = Math.floor(Math.random() * RHAPSODY_ENCOURAGEMENTS.length);
-  return RHAPSODY_ENCOURAGEMENTS[idx];
-}
+// (RHAPSODY_ENCOURAGEMENTS moved to top of script)
 
 </script>
 </body>
