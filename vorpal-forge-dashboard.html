@@ -2753,6 +2753,16 @@ let coachingSessions = load('vf_coaching', []);
 let oneShots = load('vf_oneshots', []);
 let contentIdeas = load('vf_content_ideas', []);
 let patreonInfo = load('vf_patreon_info', { count: '', income: '', voting: '', trackStatus: '', release: '' });
+
+// Budget data — declared here so they're available before any render calls
+let budgetBuckets   = load('vf_budget_buckets',   { taxes: 25, business: 40, family: 20, personal: 15 });
+let subscriptions   = load('vf_subscriptions',    []);
+let savingsGoals    = load('vf_savings_goals',    []);
+let artGoals        = load('vf_art_goals',        []);
+let deals           = load('vf_deals',            []);
+let budExpenses     = load('vf_bud_expenses',     []);
+let artGoalArchive  = load('vf_art_goal_archive', []);
+let dismissedAlerts = load('vf_dismissed_alerts', {});
 let currentContentFilter = 'all';
 let calDefault = load('vf_cal_default', {});
 let calCurrent = load('vf_cal_current', {});
@@ -7029,15 +7039,6 @@ syncAllFromSheet();
 // ═══════════════════════════════════════════════
 // BUDGET TAB — DATA
 // ═══════════════════════════════════════════════
-
-let budgetBuckets   = load('vf_budget_buckets',   { taxes: 25, business: 40, family: 20, personal: 15 });
-let subscriptions   = load('vf_subscriptions',    []);
-let savingsGoals    = load('vf_savings_goals',    []);
-let artGoals        = load('vf_art_goals',        []);
-let deals           = load('vf_deals',            []);
-let budExpenses     = load('vf_bud_expenses',     []);  // Budget-tab managed expenses (NOT the old vf_expenses income entries)
-let artGoalArchive  = load('vf_art_goal_archive', []);
-let dismissedAlerts = load('vf_dismissed_alerts', {});
 
 // Undo stack
 let undoStack = [];
