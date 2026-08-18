@@ -599,10 +599,21 @@
     align-items: flex-start;
     gap: 6px;
     transition: all 0.2s;
+    cursor: grab;
   }
-
   .reminder-item:hover { background: var(--bg-card-hover); }
-
+  .reminder-item.reminder-dragging { opacity: 0.4; cursor: grabbing; }
+  .reminder-item.reminder-drag-over { box-shadow: 0 -2px 0 var(--gold); }
+  .reminder-drag-handle {
+    color: var(--gold);
+    opacity: 0.35;
+    font-size: 0.7rem;
+    cursor: grab;
+    flex-shrink: 0;
+    margin-top: 1px;
+    line-height: 1;
+  }
+  .reminder-drag-handle:hover { opacity: 0.8; }
   .reminder-text { flex: 1; line-height: 1.4; }
 
   .reminder-del {
@@ -4189,17 +4200,81 @@ function updateStats() {
 // ═══════════════════════════════════════════════
 // REMINDERS
 // ═══════════════════════════════════════════════
+let reminderDragIdx = null;
+
 function renderReminders() {
   const list = document.getElementById('reminder-list');
   if (reminders.length === 0) {
     list.innerHTML = '<div class="empty-state" style="padding:10px 0;">All clear, Maestro.</div>';
     return;
   }
-  list.innerHTML = reminders.map(r => `
-    <div class="reminder-item">
+  list.innerHTML = reminders.map((r, idx) => `
+    <div class="reminder-item" draggable="true"
+         ondragstart="reminderDragStart(event,${idx})"
+         ondragover="reminderDragOver(event,${idx})"
+         ondrop="reminderDrop(event,${idx})"
+         ondragleave="reminderDragLeave(event)"
+         ondragend="reminderDragEnd(event)">
+      <div class="reminder-drag-handle">⠿</div>
       <div class="reminder-text">${esc(r.text)}</div>
-      <button class="reminder-del" onclick="deleteReminder('${r.id}')">✕</button>
+      <div style="display:flex;gap:3px;flex-shrink:0;">
+        <button class="btn-icon" style="color:var(--teal);font-size:0.65rem;" onclick="editReminder('${r.id}')">✎</button>
+        <button class="reminder-del" onclick="deleteReminder('${r.id}')">✕</button>
+      </div>
     </div>`).join('');
+}
+
+function reminderDragStart(e, idx) {
+  reminderDragIdx = idx;
+  setTimeout(() => e.currentTarget.classList.add('reminder-dragging'), 0);
+  e.dataTransfer.effectAllowed = 'move';
+}
+function reminderDragOver(e, idx) {
+  e.preventDefault();
+  e.currentTarget.classList.add('reminder-drag-over');
+}
+function reminderDragLeave(e) { e.currentTarget.classList.remove('reminder-drag-over'); }
+function reminderDragEnd(e) {
+  e.currentTarget.classList.remove('reminder-dragging');
+  document.querySelectorAll('.reminder-item').forEach(el => el.classList.remove('reminder-drag-over'));
+  reminderDragIdx = null;
+}
+function reminderDrop(e, targetIdx) {
+  e.preventDefault();
+  e.currentTarget.classList.remove('reminder-drag-over');
+  if (reminderDragIdx === null || reminderDragIdx === targetIdx) return;
+  const moved = reminders.splice(reminderDragIdx, 1)[0];
+  reminders.splice(targetIdx, 0, moved);
+  save('vf_reminders', reminders);
+  renderReminders();
+}
+
+function editReminder(id) {
+  const r = reminders.find(x => x.id === id);
+  if (!r) return;
+  showModal(`
+    <div class="modal" style="min-width:300px;">
+      <div class="modal-title">Edit Reminder</div>
+      <div class="form-group">
+        <label class="form-label">Reminder</label>
+        <input class="form-input" id="edit-reminder-text" value="${esc(r.text)}" autofocus>
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-sm" onclick="closeModal()">Cancel</button>
+        <button class="btn btn-teal" onclick="saveEditReminder('${id}')">Save</button>
+      </div>
+    </div>`);
+}
+
+function saveEditReminder(id) {
+  const r = reminders.find(x => x.id === id);
+  if (!r) return;
+  const text = document.getElementById('edit-reminder-text').value.trim();
+  if (!text) return;
+  r.text = text;
+  save('vf_reminders', reminders);
+  closeModal();
+  renderReminders();
 }
 
 function addReminder() {
@@ -4275,6 +4350,7 @@ function renderTodos() {
       <div class="todo-meta">
         ${t.cat !== 'all' ? `<span style="font-size:0.6rem;color:${TODO_CAT_COLORS[t.cat]||'var(--text-ghost)'};">●</span>` : ''}
         <div class="priority-dot priority-${t.priority||'low'}"></div>
+        <button class="btn-icon" style="color:var(--teal);" onclick="openEditTodo('${t.id}')">✎</button>
         <button class="btn-icon" onclick="deleteTodo('${t.id}')">✕</button>
       </div>
     </div>`).join('');
@@ -4316,6 +4392,51 @@ function todoDrop(e, targetIdx) {
   todos.splice(newTargetIdx, 0, movedItem);
 
   save('vf_todos', todos);
+  renderTodos();
+}
+
+
+function openEditTodo(id) {
+  const t = todos.find(x => x.id === id);
+  if (!t) return;
+  showModal(`
+    <div class="modal">
+      <div class="modal-title">Edit To-Do</div>
+      <div class="form-group">
+        <label class="form-label">Task</label>
+        <input class="form-input" id="edit-todo-text" value="${esc(t.text)}" autofocus>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Category</label>
+          <select class="form-select" id="edit-todo-cat">
+            ${TODO_CATS.filter(c => c !== 'all').map(c => `<option value="${c}" ${t.cat===c?'selected':''}>${c}</option>`).join('')}
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Priority</label>
+          <select class="form-select" id="edit-todo-priority">
+            <option value="high" ${t.priority==='high'?'selected':''}>High</option>
+            <option value="med" ${t.priority==='med'?'selected':''}>Medium</option>
+            <option value="low" ${t.priority==='low'?'selected':''}>Low</option>
+          </select>
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-sm" onclick="closeModal()">Cancel</button>
+        <button class="btn btn-teal" onclick="saveEditTodo('${id}')">Save Changes</button>
+      </div>
+    </div>`);
+}
+
+function saveEditTodo(id) {
+  const t = todos.find(x => x.id === id);
+  if (!t) return;
+  t.text     = document.getElementById('edit-todo-text').value.trim() || t.text;
+  t.cat      = document.getElementById('edit-todo-cat').value;
+  t.priority = document.getElementById('edit-todo-priority').value;
+  save('vf_todos', todos);
+  closeModal();
   renderTodos();
 }
 
