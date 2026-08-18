@@ -2904,6 +2904,7 @@ let patreonInfo = load('vf_patreon_info', { count: '', income: '', voting: '', t
 // Budget data — declared here so they're available before any render calls
 let budgetBuckets   = load('vf_budget_buckets',   { taxes: 25, business: 40, family: 20, personal: 15 });
 let subscriptions   = load('vf_subscriptions',    []);
+// Subscriptions: simple flat monthly drain -- no accumulator needed
 let savingsGoals    = load('vf_savings_goals',    []);
 let artGoals        = load('vf_art_goals',        []);
 let deals           = load('vf_deals',            []);
@@ -7489,13 +7490,14 @@ function getCommittedAmount() {
 }
 
 function getAvailableToSpend() {
-  // Business bucket running balance, minus expenses logged, minus committed funds, minus one month of subscriptions
-  // Subscriptions subtract one month's worth -- represents the ongoing monthly drain on the bucket
+  // Business bucket running balance, minus logged expenses, minus committed funds,
+  // minus one flat month of subscriptions at the current rate.
+  // Income accumulates in the bucket each month via logging; subs drain the same
+  // flat amount every month. Simple, honest, never compounds incorrectly.
   const bizBalance    = getBucketBalance('business');
   const totalExpenses = budExpenses.reduce((s, e) => s + (e.amount || 0), 0);
   const committed     = getCommittedAmount();
-  const subsDrain     = getSubsMonthly();
-  return bizBalance - totalExpenses - committed - subsDrain;
+  return bizBalance - totalExpenses - committed - getSubsMonthly();
 }
 
 function getBizNetYTD() {
@@ -7780,7 +7782,7 @@ function deleteSubscription(id) {
   pushUndo(`Removed "${sub ? sub.name : 'subscription'}"`, () => {
     subscriptions = snap;
     save('vf_subscriptions', subscriptions);
-    renderSubscriptions();
+      renderSubscriptions();
     renderKnobs();
   });
 }
