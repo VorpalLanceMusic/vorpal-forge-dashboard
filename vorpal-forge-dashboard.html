@@ -1139,10 +1139,27 @@
     border: 1px solid var(--border);
     border-radius: var(--radius-sm);
     transition: all 0.2s;
-    group: true;
+    cursor: grab;
+    position: relative;
   }
-
   .todo-item:hover { background: var(--bg-card-hover); }
+  .todo-item.todo-dragging { opacity: 0.4; cursor: grabbing; }
+  .todo-item.todo-drag-over { box-shadow: 0 -2px 0 var(--teal); }
+  .todo-drag-handle {
+    color: var(--text-ghost);
+    font-size: 0.7rem;
+    cursor: grab;
+    opacity: 0.35;
+    flex-shrink: 0;
+    margin-top: 1px;
+    line-height: 1;
+  }
+  .todo-drag-handle:hover { opacity: 0.8; }
+  .todo-sort-btn {
+    font-size: 0.58rem;
+    padding: 2px 7px;
+    margin-left: 4px;
+  }
 
   .todo-check {
     width: 14px;
@@ -4226,6 +4243,10 @@ function setTodoCat(cat) {
   renderTodos();
 }
 
+// Todo drag state
+let todoDragIdx = null;
+let todoSortByPriority = false;
+
 function renderTodos() {
   const list = document.getElementById('todo-list');
   let filtered = activeTodoCat === 'all' ? todos : todos.filter(t => t.cat === activeTodoCat);
@@ -4236,11 +4257,19 @@ function renderTodos() {
     return;
   }
 
-  const priorityOrder = { high: 0, med: 1, low: 2, '': 3 };
-  filtered.sort((a, b) => (priorityOrder[a.priority] || 3) - (priorityOrder[b.priority] || 3));
+  if (todoSortByPriority) {
+    const priorityOrder = { high: 0, med: 1, low: 2, '': 3 };
+    filtered.sort((a, b) => (priorityOrder[a.priority] || 3) - (priorityOrder[b.priority] || 3));
+  }
 
-  list.innerHTML = filtered.map(t => `
-    <div class="todo-item">
+  list.innerHTML = filtered.map((t, idx) => `
+    <div class="todo-item" draggable="true"
+         ondragstart="todoDragStart(event,${idx})"
+         ondragover="todoDragOver(event,${idx})"
+         ondrop="todoDrop(event,${idx})"
+         ondragleave="todoDragLeave(event)"
+         ondragend="todoDragEnd(event)">
+      <div class="todo-drag-handle">⠿</div>
       <input type="checkbox" class="todo-check" ${t.done?'checked':''} onchange="toggleTodo('${t.id}', this.checked)">
       <div class="todo-text ${t.done?'done':''}">${esc(t.text)}</div>
       <div class="todo-meta">
@@ -4249,6 +4278,45 @@ function renderTodos() {
         <button class="btn-icon" onclick="deleteTodo('${t.id}')">✕</button>
       </div>
     </div>`).join('');
+}
+
+function todoDragStart(e, idx) {
+  todoDragIdx = idx;
+  setTimeout(() => e.currentTarget.classList.add('todo-dragging'), 0);
+  e.dataTransfer.effectAllowed = 'move';
+}
+function todoDragOver(e, idx) {
+  e.preventDefault();
+  e.currentTarget.classList.add('todo-drag-over');
+}
+function todoDragLeave(e) {
+  e.currentTarget.classList.remove('todo-drag-over');
+}
+function todoDragEnd(e) {
+  e.currentTarget.classList.remove('todo-dragging');
+  document.querySelectorAll('.todo-item').forEach(el => el.classList.remove('todo-drag-over'));
+  todoDragIdx = null;
+}
+function todoDrop(e, targetIdx) {
+  e.preventDefault();
+  e.currentTarget.classList.remove('todo-drag-over');
+  if (todoDragIdx === null || todoDragIdx === targetIdx) return;
+
+  // Work on the filtered view but update the master todos array
+  let filtered = activeTodoCat === 'all' ? todos.filter(t => !t.archived) : todos.filter(t => t.cat === activeTodoCat && !t.archived);
+  const movedItem = filtered[todoDragIdx];
+  const targetItem = filtered[targetIdx];
+
+  // Find their positions in master todos array and swap order
+  const movedMasterIdx  = todos.findIndex(t => t.id === movedItem.id);
+  const targetMasterIdx = todos.findIndex(t => t.id === targetItem.id);
+
+  todos.splice(movedMasterIdx, 1);
+  const newTargetIdx = todos.findIndex(t => t.id === targetItem.id);
+  todos.splice(newTargetIdx, 0, movedItem);
+
+  save('vf_todos', todos);
+  renderTodos();
 }
 
 function toggleTodo(id, done) {
