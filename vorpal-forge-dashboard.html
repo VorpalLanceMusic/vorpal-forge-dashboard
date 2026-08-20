@@ -4203,7 +4203,7 @@ function saveCommissionEdit(id) {
 function updateStats() {
   const active = commissions.filter(c => c.slot === 'active' && c.stage !== 'delivered');
   const wait = commissions.filter(c => c.slot === 'waitlist');
-  const unpaid = commissions.filter(c => c.slot === 'active' && c.paymentStatus !== 'full').reduce((s,c) => s + (c.price||0), 0);
+  const unpaid = commissions.filter(c => c.slot === 'active' && c.paymentStatus !== 'full' && c.paymentStatus !== 'tip' && !c.paymentConfirmed).reduce((s,c) => s + (c.price||0), 0);
   const now = new Date();
   const thisMonthIncome = expenses.filter(e => {
     const d = new Date(e.date);
