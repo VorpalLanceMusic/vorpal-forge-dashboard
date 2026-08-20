@@ -3160,6 +3160,11 @@ function renderActiveCard(c) {
       <button class="btn btn-sm" onclick="event.stopPropagation();openCommissionDetail('${c.id}')" title="Edit">✎</button>
       <button class="btn btn-sm" style="color:var(--danger);" onclick="event.stopPropagation();deleteCommission('${c.id}')">✕</button>
     </div>
+    ${(c.paymentStatus === 'full' || c.paymentStatus === 'tip') && !c.paymentConfirmed
+      ? `<button class="btn btn-sm" style="width:100%;margin-top:5px;background:rgba(85,204,136,0.12);color:var(--success);border-color:var(--success);" onclick="event.stopPropagation();confirmPayment('commission','${c.id}',event)">💰 Confirm Payment — Log to Budget</button>`
+      : c.paymentConfirmed
+        ? `<div style="width:100%;margin-top:5px;text-align:center;font-size:0.65rem;color:var(--success);opacity:0.7;">✓ Payment logged to budget</div>`
+        : ''}
     <button class="btn btn-sm" style="width:100%;margin-top:5px;color:var(--gold-dim);" onclick="event.stopPropagation();returnToWaitlist('${c.id}')">↩ Return to Waitlist</button>
   </div>`;
 }
@@ -3178,6 +3183,11 @@ function renderDeliveredCard(c) {
       ${payLabel ? `<span class="payment-badge ${payClass}">${payLabel}</span>` : ''}
     </div>
     ${c.deliveredAt ? `<div class="card-date" style="margin-top:4px;">Delivered: <span>${new Date(c.deliveredAt).toLocaleDateString()}</span></div>` : ''}
+    ${(c.paymentStatus === 'full' || c.paymentStatus === 'tip') && !c.paymentConfirmed
+      ? `<button class="btn btn-sm" style="width:100%;margin-top:6px;background:rgba(85,204,136,0.12);color:var(--success);border-color:var(--success);" onclick="event.stopPropagation();confirmPayment('commission','${c.id}',event)">💰 Confirm Payment — Log to Budget</button>`
+      : c.paymentConfirmed
+        ? `<div style="width:100%;margin-top:5px;text-align:center;font-size:0.65rem;color:var(--success);opacity:0.7;">✓ Payment logged to budget</div>`
+        : ''}
     <div style="display:flex;gap:5px;margin-top:8px;">
       <button class="btn btn-sm" style="flex:1;" onclick="setStage('${c.id}','revision')">← Back to Revision</button>
       <button class="btn btn-sm" style="color:var(--danger);" onclick="deleteCommission('${c.id}')">✕</button>
@@ -3388,6 +3398,11 @@ function renderMapActiveCard(c) {
       <button class="btn btn-sm" onclick="event.stopPropagation();openMapDetail('${c.id}')" title="Edit">✎</button>
       <button class="btn btn-sm" style="color:var(--danger);" onclick="event.stopPropagation();deleteMapCommission('${c.id}')">✕</button>
     </div>
+    ${(c.paymentStatus === 'full' || c.paymentStatus === 'tip') && !c.paymentConfirmed
+      ? `<button class="btn btn-sm" style="width:100%;margin-top:5px;background:rgba(85,204,136,0.12);color:var(--success);border-color:var(--success);" onclick="event.stopPropagation();confirmPayment('map','${c.id}',event)">💰 Confirm Payment — Log to Budget</button>`
+      : c.paymentConfirmed
+        ? `<div style="width:100%;margin-top:5px;text-align:center;font-size:0.65rem;color:var(--success);opacity:0.7;">✓ Payment logged to budget</div>`
+        : ''}
     <button class="btn btn-sm" style="width:100%;margin-top:5px;color:var(--gold-dim);" onclick="event.stopPropagation();returnMapToWaitlist('${c.id}')">↩ Return to Waitlist</button>
   </div>`;
 }
@@ -3406,6 +3421,11 @@ function renderMapDeliveredCard(c) {
       ${payLabel ? `<span class="payment-badge ${payClass}">${payLabel}</span>` : ''}
     </div>
     ${c.deliveredAt ? `<div class="card-date" style="margin-top:4px;">Delivered: <span>${new Date(c.deliveredAt).toLocaleDateString()}</span></div>` : ''}
+    ${(c.paymentStatus === 'full' || c.paymentStatus === 'tip') && !c.paymentConfirmed
+      ? `<button class="btn btn-sm" style="width:100%;margin-top:6px;background:rgba(85,204,136,0.12);color:var(--success);border-color:var(--success);" onclick="event.stopPropagation();confirmPayment('map','${c.id}',event)">💰 Confirm Payment — Log to Budget</button>`
+      : c.paymentConfirmed
+        ? `<div style="width:100%;margin-top:5px;text-align:center;font-size:0.65rem;color:var(--success);opacity:0.7;">✓ Payment logged to budget</div>`
+        : ''}
     <div style="display:flex;gap:5px;margin-top:8px;">
       <button class="btn btn-sm" style="flex:1;" onclick="setMapStage('${c.id}','revision')">← Back to Revision</button>
       <button class="btn btn-sm" style="color:var(--danger);" onclick="deleteMapCommission('${c.id}')">✕</button>
@@ -3783,11 +3803,50 @@ function openNewCommission() {
     </div>`);
 }
 
+
+// ═══════════════════════════════════════════════
+// CONFIRM PAYMENT → logs income into budget
+// ═══════════════════════════════════════════════
+function confirmPayment(type, id, event) {
+  if (event) event.stopPropagation();
+  if (!confirm('Confirm payment received? This will log the income into your budget.')) return;
+
+  if (type === 'commission') {
+    const c = commissions.find(x => x.id === id);
+    if (!c) return;
+    c.paymentConfirmed = true;
+    save('vf_commissions', commissions);
+    autoLogIncome(c, c.paymentStatus);
+    renderBoard();
+  } else if (type === 'map') {
+    const c = mapCommissions.find(x => x.id === id);
+    if (!c) return;
+    c.paymentConfirmed = true;
+    save('vf_maps', mapCommissions);
+    autoLogIncome(c, c.paymentStatus);
+    renderMapBoard();
+  } else if (type === 'coaching') {
+    const s = coachingSessions ? coachingSessions.find(x => x.id === id) : null;
+    if (!s) return;
+    s.paymentConfirmed = true;
+    save('vf_coaching', coachingSessions);
+    autoLogCoachingIncome(s);
+    renderCoachingBoard && renderCoachingBoard();
+  } else if (type === 'oneshot') {
+    const r = oneShots.find(x => x.id === id);
+    if (!r) return;
+    r.paymentConfirmed = true;
+    save('vf_oneshots', oneShots);
+    autoLogOneShotIncome(r);
+    renderOneShotBoard && renderOneShotBoard();
+  }
+}
+
 function autoLogIncome(c, prevPayStatus) {
   // Remove any existing auto-entry for this commission
   expenses = expenses.filter(e => e.autoId !== c.id);
 
-  const paid = c.paymentStatus === 'full' || c.paymentStatus === 'tip';
+  const paid = (c.paymentStatus === 'full' || c.paymentStatus === 'tip') && c.paymentConfirmed;
   if (!paid) {
     save('vf_expenses', expenses);
     renderExpenses();
@@ -6234,7 +6293,7 @@ function renderPatreonInfo() {
 // ═══════════════════════════════════════════════
 function autoLogCoachingIncome(session) {
   expenses = expenses.filter(e => e.autoId !== session.id);
-  const paid = session.paymentStatus === 'full' || session.paymentStatus === 'tip';
+  const paid = (session.paymentStatus === 'full' || session.paymentStatus === 'tip') && session.paymentConfirmed;
   if (!paid) { save('vf_expenses', expenses); renderExpenses(); updateStats(); return; }
 
   const desc = session.tipAmount
@@ -6602,7 +6661,7 @@ function normalizeOneShots() {
 
 function autoLogOneShotIncome(req) {
   expenses = expenses.filter(e => e.autoId !== req.id);
-  const paid = req.paymentStatus === 'full' || req.paymentStatus === 'tip';
+  const paid = (req.paymentStatus === 'full' || req.paymentStatus === 'tip') && req.paymentConfirmed;
   if (!paid) { save('vf_expenses', expenses); renderExpenses(); updateStats(); return; }
 
   const desc = req.tipAmount
