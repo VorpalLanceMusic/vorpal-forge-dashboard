@@ -7554,14 +7554,14 @@ function getAvailableToSpend() {
   // Income accumulates in the bucket each month via logging; subs drain the same
   // flat amount every month. Simple, honest, never compounds incorrectly.
   const bizBalance    = getBucketBalance('business');
-  const totalExpenses = budExpenses.reduce((s, e) => s + (e.amount || 0), 0);
+  const totalExpenses = budExpenses.filter(e => !e.recordOnly).reduce((s, e) => s + (e.amount || 0), 0);
   const committed     = getCommittedAmount();
   return bizBalance - totalExpenses - committed - getSubsMonthly();
 }
 
 function getBizNetYTD() {
   const income = getYTDIncome() * ((budgetBuckets.business || 40) / 100);
-  const exp    = getYearExpenses().reduce((s, e) => s + (e.amount || 0), 0);
+  const exp    = getYearExpenses().filter(e => !e.recordOnly).reduce((s, e) => s + (e.amount || 0), 0);
   return income - exp;
 }
 
@@ -7863,9 +7863,9 @@ function renderBudExpenses() {
   if (yearEl) yearEl.textContent = yr;
   const yearly = getYearExpenses().sort((a, b) => new Date(b.date) - new Date(a.date));
   list.innerHTML = yearly.length ? yearly.map(e => `
-    <div class="bud-expense-item">
+    <div class="bud-expense-item" style="${e.recordOnly ? 'opacity:0.65;border-left:2px solid var(--teal-dim);' : ''}">
       <div class="bud-exp-info">
-        <div class="bud-exp-desc">${esc(e.desc)}</div>
+        <div class="bud-exp-desc">${esc(e.desc)}${e.recordOnly ? ' <span style="font-size:0.6rem;color:var(--teal-dim);font-style:italic;">(record only)</span>' : ''}</div>
         <div class="bud-exp-meta">${e.date} &bull; ${esc(e.category || 'Other')}</div>
       </div>
       <span class="bud-exp-amt">-$${(e.amount||0).toFixed(2)}</span>
@@ -7915,6 +7915,14 @@ function openAddBudExpense() {
           <input class="bud-form-input" id="bexp-note" placeholder="Receipt #, store, context...">
         </div>
       </div>
+      <div class="bud-form-row" style="margin-top:4px;">
+        <label style="display:flex;align-items:flex-start;gap:8px;cursor:pointer;font-size:0.75rem;color:var(--text-ghost);line-height:1.4;">
+          <input type="checkbox" id="bexp-record-only" style="margin-top:2px;accent-color:var(--teal);">
+          <span>Already accounted for in budget &mdash; log for records only<br>
+            <span style="font-size:0.68rem;opacity:0.7;">(Won't subtract from Available to Spend)</span>
+          </span>
+        </label>
+      </div>
       <div class="modal-actions">
         <button class="btn btn-sm" onclick="closeModal()">Cancel</button>
         <button class="btn btn-teal" onclick="saveBudExpense()">Log Expense</button>
@@ -7928,8 +7936,9 @@ function saveBudExpense() {
   const cat  = document.getElementById('bexp-cat').value;
   const date = document.getElementById('bexp-date').value;
   const note = document.getElementById('bexp-note').value.trim();
+  const recordOnly = document.getElementById('bexp-record-only')?.checked || false;
   if (!desc || isNaN(amt)) return;
-  budExpenses.push({ id: 'bexp_' + Date.now(), desc, amount: amt, category: cat, date, note });
+  budExpenses.push({ id: 'bexp_' + Date.now(), desc, amount: amt, category: cat, date, note, recordOnly });
   save('vf_bud_expenses', budExpenses);
   closeModal();
   renderBudExpenses();
@@ -7952,7 +7961,7 @@ function deleteBudExpense(id) {
 function exportBudgetTaxData() {
   const yr = new Date().getFullYear();
   const rows = getYearExpenses().map(e =>
-    `${e.date},"${e.desc}","${e.category || 'Other'}",-${(e.amount||0).toFixed(2)},"${e.note||''}"`
+    `${e.date},"${e.desc}","${e.category || 'Other'}",${e.recordOnly ? '0' : '-' + (e.amount||0).toFixed(2)},"${e.recordOnly ? '[RECORD ONLY — already accounted for] ' : ''}${e.note||''}"`
   );
   const csv = ['Date,Description,Category,Amount,Notes', ...rows].join('\n');
   const blob = new Blob([csv], { type: 'text/csv' });
@@ -8467,19 +8476,8 @@ function _doPayArtGoal(id, amount, evt) {
   g.paid = prevPaid + amount;
   const inp = document.getElementById('aalloc-' + id);
   if (inp) inp.value = '';
-  // Also log to budget expenses for tax records
-  budExpenses.push({
-    id: 'bexp_' + Date.now(),
-    desc: `Art commission payment: ${g.name}`,
-    amount,
-    category: 'Art Commission',
-    date: new Date().toISOString().split('T')[0],
-    note: `Art goal payment (${g.paid >= g.target ? 'final' : 'partial'})`,
-  });
   save('vf_art_goals', artGoals);
-  save('vf_bud_expenses', budExpenses);
   renderArtGoals();
-  renderBudExpenses();
   updateBudgetGlance();
   if (g.paid >= g.target && g.target > 0) {
     showPraise('artPaid');
@@ -8489,11 +8487,8 @@ function _doPayArtGoal(id, amount, evt) {
   }
   pushUndo(`Undone: $${amount.toFixed(2)} payment on "${g.name}"`, () => {
     g.paid = prevPaid;
-    budExpenses = budExpenses.filter(e => !(e.desc.includes(g.name) && e.amount === amount));
     save('vf_art_goals', artGoals);
-    save('vf_bud_expenses', budExpenses);
     renderArtGoals();
-    renderBudExpenses();
   });
 }
 
