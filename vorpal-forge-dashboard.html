@@ -2502,34 +2502,52 @@
 
         </div>
 
-        <!-- CENTER: Overview + Deal Tracker -->
+        <!-- CENTER: Income Log + Deal Tracker side by side -->
         <div class="budget-center">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
 
-          <div class="bud-panel">
-            <div class="bud-panel-header">
-              <span>Income by Source</span>
-              <button class="btn btn-sm" style="font-size:0.6rem;padding:2px 8px;" onclick="openRetagIncome()">Re-tag entries</button>
-            </div>
-            <div class="bud-panel-body">
-              <div id="source-bars"></div>
-              <div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border);display:flex;justify-content:space-between;font-size:0.68rem;">
-                <span style="color:var(--text-ghost);">Goals funded</span>
-                <span id="ov-goals-pct" style="color:var(--teal);font-weight:700;">0%</span>
+            <!-- INCOME LOG -->
+            <div class="bud-panel" style="display:flex;flex-direction:column;">
+              <div class="bud-panel-header">
+                <span>Income Log</span>
+                <div style="display:flex;gap:5px;align-items:center;">
+                  <button class="btn btn-sm" style="font-size:0.6rem;padding:2px 8px;" onclick="openRetagIncome()">Re-tag</button>
+                  <button class="btn btn-teal btn-sm" style="font-size:0.6rem;padding:2px 8px;" onclick="openManualIncome()">+ Add Income</button>
+                </div>
+              </div>
+              <!-- Patreon/Twitch reminder banner -->
+              <div id="income-reminder-banner" style="display:none;padding:6px 10px;background:rgba(240,192,64,0.1);border-bottom:1px solid rgba(240,192,64,0.2);font-size:0.65rem;color:var(--gold);display:flex;align-items:center;gap:6px;">
+                <span>📅</span>
+                <span id="income-reminder-text">Don't forget to log your Patreon and Twitch income for this month.</span>
+              </div>
+              <!-- Source bars strip -->
+              <div style="padding:8px 10px 6px;border-bottom:1px solid var(--border);">
+                <div id="source-bars"></div>
+                <div style="margin-top:6px;display:flex;justify-content:space-between;font-size:0.62rem;">
+                  <span style="color:var(--text-ghost);">Goals funded</span>
+                  <span id="ov-goals-pct" style="color:var(--teal);font-weight:700;">0%</span>
+                </div>
+              </div>
+              <!-- Income entries list -->
+              <div class="bud-panel-body" style="flex:1;overflow-y:auto;max-height:320px;">
+                <div id="income-log-list"></div>
+                <div id="income-log-empty" style="display:none;padding:20px;font-size:0.72rem;color:var(--text-ghost);text-align:center;">No income logged yet.</div>
               </div>
             </div>
-          </div>
 
-          <div class="bud-panel">
-            <div class="bud-panel-header">
-              <span>Deal Tracker</span>
-              <button class="btn btn-teal btn-sm" style="font-size:0.6rem;padding:2px 8px;" onclick="openAddDeal()">+ New Deal</button>
+            <!-- DEAL TRACKER -->
+            <div class="bud-panel">
+              <div class="bud-panel-header">
+                <span>Deal Tracker</span>
+                <button class="btn btn-teal btn-sm" style="font-size:0.6rem;padding:2px 8px;" onclick="openAddDeal()">+ New Deal</button>
+              </div>
+              <div class="bud-panel-body">
+                <div id="deal-list"></div>
+                <div id="deal-empty" class="empty-state" style="display:none;padding:20px;font-size:0.72rem;">No deals set up yet.</div>
+              </div>
             </div>
-            <div class="bud-panel-body">
-              <div id="deal-list"></div>
-              <div id="deal-empty" class="empty-state" style="display:none;padding:20px;font-size:0.72rem;">No deals set up yet.</div>
-            </div>
-          </div>
 
+          </div>
         </div>
 
         <!-- RIGHT: Goals + Art Goals -->
@@ -2919,6 +2937,9 @@ const SOURCE_LABELS = {
   coaching:         'Coaching',
   caelos_legends:   'Caelos Legends',
   patreon:          'Patreon',
+  twitch_subs:      'Twitch Subs',
+  twitch_bits:      'Twitch Bits',
+  donation:         'Donation',
   merch:            'Merch',
   other:            'Other',
 };
@@ -2928,7 +2949,10 @@ const SOURCE_COLORS = {
   coaching:         '#7c8cf8',
   caelos_legends:   '#f08c55',
   patreon:          '#f96854',
-  merch:            '#55cc88',
+  twitch_subs:      '#9146ff',
+  twitch_bits:      '#c084fc',
+  donation:         '#55cc88',
+  merch:            '#38bdf8',
   other:            '#888',
 };
 const BUCKET_KEYS   = ['taxes', 'business', 'family', 'personal'];
@@ -8778,6 +8802,158 @@ function renderBucketPills() {
         <div class="bucket-pill-pct">${pct}% of all income</div>
       </div>`;
   }).join('');
+}
+
+
+// ═══════════════════════════════════════════════
+// MANUAL INCOME ENTRY + INCOME LOG
+// ═══════════════════════════════════════════════
+
+function openManualIncome() {
+  const today = new Date().toISOString().split('T')[0];
+  const manualSources = ['patreon','twitch_subs','twitch_bits','donation','merch','other'];
+  showModal(`
+    <div class="modal bud-modal" style="max-width:420px;">
+      <div class="modal-title">Log Income</div>
+      <div class="bud-form-row">
+        <div class="bud-form-group" style="flex:2;">
+          <label class="bud-form-label">Description</label>
+          <input class="bud-form-input" id="mi-desc" placeholder="e.g. August Patreon payout" autofocus>
+        </div>
+        <div class="bud-form-group">
+          <label class="bud-form-label">Amount ($)</label>
+          <input class="bud-form-input" id="mi-amt" type="number" step="0.01" placeholder="0.00">
+        </div>
+      </div>
+      <div class="bud-form-row">
+        <div class="bud-form-group">
+          <label class="bud-form-label">Source</label>
+          <select class="bud-form-input" id="mi-source">
+            ${manualSources.map(s => `<option value="${s}">${SOURCE_LABELS[s]||s}</option>`).join('')}
+          </select>
+        </div>
+        <div class="bud-form-group">
+          <label class="bud-form-label">Date</label>
+          <input class="bud-form-input" id="mi-date" type="date" value="${today}">
+        </div>
+      </div>
+      <div class="bud-form-row">
+        <div class="bud-form-group" style="flex:1;">
+          <label class="bud-form-label">Notes (optional)</label>
+          <input class="bud-form-input" id="mi-note" placeholder="e.g. 12 subs, 450 bits...">
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-sm" onclick="closeModal()">Cancel</button>
+        <button class="btn btn-teal" onclick="saveManualIncome()">Log Income</button>
+      </div>
+    </div>`);
+}
+
+function saveManualIncome() {
+  const desc   = document.getElementById('mi-desc').value.trim();
+  const amt    = parseFloat(document.getElementById('mi-amt').value);
+  const source = document.getElementById('mi-source').value;
+  const date   = document.getElementById('mi-date').value;
+  const note   = document.getElementById('mi-note').value.trim();
+  if (!desc || isNaN(amt) || amt <= 0) return;
+  expenses.push({
+    id: 'e_' + Date.now(),
+    desc,
+    amount: amt,
+    type: 'income',
+    source,
+    date,
+    auto: false,
+    note,
+  });
+  save('vf_expenses', expenses);
+  closeModal();
+  renderIncomeLog();
+  renderSourceBars();
+  renderIncomeLog();
+  checkIncomeReminder();
+  updateStats();
+  updateBudgetGlance();
+  checkDealFires(source, amt);
+  showPraise('incomeLogged');
+}
+
+function renderIncomeLog() {
+  const list  = document.getElementById('income-log-list');
+  const empty = document.getElementById('income-log-empty');
+  if (!list) return;
+  const entries = expenses
+    .filter(e => e.type === 'income')
+    .sort((a, b) => new Date(b.date) - new Date(a.date));
+  if (!entries.length) {
+    list.innerHTML = '';
+    if (empty) empty.style.display = 'block';
+    return;
+  }
+  if (empty) empty.style.display = 'none';
+  list.innerHTML = entries.map(e => {
+    const color = SOURCE_COLORS[e.source] || '#888';
+    const label = SOURCE_LABELS[e.source] || e.source || 'Other';
+    return `
+    <div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--border);">
+      <div style="width:3px;height:32px;border-radius:2px;background:${color};flex-shrink:0;"></div>
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:0.7rem;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(e.desc)}</div>
+        <div style="font-size:0.58rem;color:var(--text-ghost);">${e.date} &bull; <span style="color:${color};">${label}</span>${e.note ? ' &bull; ' + esc(e.note) : ''}</div>
+      </div>
+      <div style="font-size:0.75rem;font-weight:700;color:var(--success);flex-shrink:0;">+$${(e.amount||0).toFixed(2)}</div>
+      ${!e.auto ? `<button onclick="deleteManualIncome('${e.id}')" style="background:none;border:none;color:var(--danger);cursor:pointer;font-size:0.7rem;padding:0 2px;" title="Remove">✕</button>` : ''}
+    </div>`;
+  }).join('');
+}
+
+function deleteManualIncome(id) {
+  const snap = [...expenses];
+  const item = expenses.find(e => e.id === id);
+  if (!item || item.auto) return;
+  expenses = expenses.filter(e => e.id !== id);
+  save('vf_expenses', expenses);
+  renderIncomeLog();
+  renderSourceBars();
+  updateStats();
+  updateBudgetGlance();
+  pushUndo(`Removed income entry "${item.desc}"`, () => {
+    expenses = snap;
+    save('vf_expenses', expenses);
+    renderIncomeLog();
+    renderSourceBars();
+    updateStats();
+    updateBudgetGlance();
+  });
+}
+
+function checkIncomeReminder() {
+  const banner = document.getElementById('income-reminder-banner');
+  if (!banner) return;
+  const now   = new Date();
+  const month = now.getMonth();
+  const year  = now.getFullYear();
+  const day   = now.getDate();
+  // Only show from 1st of month until at least one Patreon AND one Twitch entry this month
+  const thisMonthEntries = expenses.filter(e => {
+    if (e.type !== 'income') return false;
+    const d = new Date(e.date);
+    return d.getMonth() === month && d.getFullYear() === year;
+  });
+  const hasPatreon = thisMonthEntries.some(e => e.source === 'patreon');
+  const hasTwitch  = thisMonthEntries.some(e => e.source === 'twitch_subs' || e.source === 'twitch_bits');
+  if (!hasPatreon || !hasTwitch) {
+    const monthName = now.toLocaleString('default', { month: 'long' });
+    const missing = [];
+    if (!hasPatreon) missing.push('Patreon');
+    if (!hasTwitch)  missing.push('Twitch');
+    const text = document.getElementById('income-reminder-text');
+    if (text) text.textContent = `Don't forget to log your ${missing.join(' and ')} income for ${monthName}.`;
+    banner.style.display = 'flex';
+  } else {
+    banner.style.display = 'none';
+  }
 }
 
 function renderSourceBars() {
