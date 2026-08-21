@@ -2462,6 +2462,18 @@
           <div class="budget-hero-sub" id="hero-sub">Business bucket minus subscriptions and committed funds</div>
           <div id="hero-encouragement" style="display:none;margin-top:8px;font-size:0.65rem;color:rgba(85,204,136,0.5);font-style:italic;line-height:1.5;"></div>
         </div>
+        <!-- PERSONAL WALLET -->
+        <div class="budget-hero-panel" style="min-width:180px;max-width:220px;border-color:#a78bfa;background:rgba(167,139,250,0.05);">
+          <div class="budget-hero-label" style="color:#a78bfa;">Personal Funds</div>
+          <div class="budget-hero-amount" id="personal-wallet-amount" style="color:#a78bfa;">$0.00</div>
+          <div style="display:flex;gap:6px;margin-top:10px;justify-content:center;">
+            <button class="btn btn-sm" style="flex:1;border-color:#a78bfa;color:#a78bfa;font-size:1.2rem;padding:2px 0;line-height:1;" onclick="openPersonalAdd()">+</button>
+            <button class="btn btn-sm" style="flex:1;border-color:#a78bfa;color:#a78bfa;font-size:1.2rem;padding:2px 0;line-height:1;" onclick="openPersonalSpend()">&#8722;</button>
+          </div>
+          <div style="margin-top:8px;text-align:center;">
+            <button class="btn btn-sm" style="font-size:0.58rem;padding:1px 8px;color:var(--text-ghost);border-color:var(--border);" onclick="openPersonalLog()">View Log</button>
+          </div>
+        </div>
         <div class="budget-bucket-pills" id="bucket-pills"><!-- Rendered by JS --></div>
       </div>
 
@@ -2929,6 +2941,11 @@ let deals           = load('vf_deals',            []);
 let budExpenses     = load('vf_bud_expenses',     []);
 let artGoalArchive  = load('vf_art_goal_archive', []);
 let dismissedAlerts = load('vf_dismissed_alerts', {});
+let bucketLedger    = load('vf_bucket_ledger',    []);
+let ledgerMigrated  = load('vf_ledger_migrated',  false);
+let personalWallet  = load('vf_personal_wallet',  { balance: 0 });
+let personalLog     = load('vf_personal_log',      []);
+let transferLog     = load('vf_transfer_log',      []);
 
 // Budget constants -- must be declared before any render calls
 const SOURCE_LABELS = {
@@ -3897,6 +3914,7 @@ function autoLogIncome(c, prevPayStatus) {
   });
 
   save('vf_expenses', expenses);
+  depositToBuckets(c.price, incomeSource, desc, new Date().toISOString().split('T')[0]);
   renderExpenses();
   updateStats();
   checkDealFires(incomeSource, c.price);
@@ -6335,6 +6353,7 @@ function autoLogCoachingIncome(session) {
     auto: true,
   });
   save('vf_expenses', expenses);
+  depositToBuckets(session.price || 0, 'coaching', desc, new Date().toISOString().split('T')[0]);
   renderExpenses();
   updateStats();
   checkDealFires('coaching', session.price || 0);
@@ -6703,6 +6722,7 @@ function autoLogOneShotIncome(req) {
     auto: true,
   });
   save('vf_expenses', expenses);
+  depositToBuckets(req.price || 0, 'caelos_legends', desc, new Date().toISOString().split('T')[0]);
   renderExpenses();
   updateStats();
   checkDealFires('caelos_legends', req.price || 0);
@@ -7557,9 +7577,45 @@ function getMonthlyIncome() {
   }).reduce((s, e) => s + (e.amount || 0), 0);
 }
 
+// ═══ LEDGER SYSTEM ═══
+
+function migrateToBucketLedger() {
+  if (ledgerMigrated) return;
+  const allTime = getAllTimeIncome();
+  if (allTime > 0) {
+    BUCKET_KEYS.forEach(key => {
+      const amount = allTime * ((budgetBuckets[key]||0)/100);
+      if (amount>0) bucketLedger.push({id:'migr_'+key+'_'+Date.now(),bucket:key,amount,date:new Date().toISOString().split('T')[0],source:'migration',note:'Opening balance',type:'deposit'});
+    });
+    save('vf_bucket_ledger', bucketLedger);
+  }
+  ledgerMigrated=true; save('vf_ledger_migrated',true);
+}
+
 function getBucketBalance(key) {
-  // Running balance: all-time income * bucket pct
-  return getAllTimeIncome() * ((budgetBuckets[key] || 0) / 100);
+  return bucketLedger.filter(e=>e.bucket===key).reduce((s,e)=>{
+    if(e.type==='deposit'||e.type==='transfer_in') return s+(e.amount||0);
+    if(e.type==='transfer_out') return s-(e.amount||0);
+    return s;
+  },0);
+}
+
+function depositToBuckets(totalAmount,source,note,date) {
+  BUCKET_KEYS.forEach(key=>{
+    const amount=totalAmount*((budgetBuckets[key]||0)/100);
+    if(amount>0) bucketLedger.push({id:'dep_'+key+'_'+Date.now()+'_'+Math.random().toString(36).slice(2,6),bucket:key,amount,date:date||new Date().toISOString().split('T')[0],source,note:note||'',type:'deposit'});
+  });
+  save('vf_bucket_ledger',bucketLedger);
+}
+
+function transferBetweenBuckets(fromKey,toKey,amount,note) {
+  const date=new Date().toISOString().split('T')[0];
+  const id='xfr_'+Date.now();
+  bucketLedger.push({id:id+'_out',bucket:fromKey,amount,date,source:'transfer',note:note||('Transfer to '+BUCKET_LABELS[toKey]),type:'transfer_out'});
+  bucketLedger.push({id:id+'_in', bucket:toKey,  amount,date,source:'transfer',note:note||('Transfer from '+BUCKET_LABELS[fromKey]),type:'transfer_in'});
+  save('vf_bucket_ledger',bucketLedger);
+  transferLog.push({id,from:fromKey,to:toKey,amount,date,note:note||''});
+  save('vf_transfer_log',transferLog);
 }
 
 function getSubsMonthly() {
@@ -7584,9 +7640,15 @@ function getAvailableToSpend() {
 }
 
 function getBizNetYTD() {
-  const income = getYTDIncome() * ((budgetBuckets.business || 40) / 100);
-  const exp    = getYearExpenses().filter(e => !e.recordOnly).reduce((s, e) => s + (e.amount || 0), 0);
-  return income - exp;
+  const now=new Date();
+  const ytdBiz=bucketLedger.filter(e=>e.bucket==='business'&&new Date(e.date).getFullYear()===now.getFullYear())
+    .reduce((s,e)=>{
+      if(e.type==='deposit'||e.type==='transfer_in') return s+(e.amount||0);
+      if(e.type==='transfer_out') return s-(e.amount||0);
+      return s;
+    },0);
+  const exp=getYearExpenses().filter(e=>!e.recordOnly).reduce((s,e)=>s+(e.amount||0),0);
+  return ytdBiz-exp;
 }
 
 // ── KNOB TOTAL BAR (uses all-time for context) ──
@@ -8772,6 +8834,129 @@ function dismissDealAlert(dealId, dueDate) {
 // BUDGET OVERVIEW (source bars + liquid/committed)
 // ═══════════════════════════════════════════════
 
+
+// ═══════════════════════════════════════════════
+// PERSONAL WALLET + BUCKET TRANSFERS
+// ═══════════════════════════════════════════════
+
+function renderPersonalWallet() {
+  const el = document.getElementById('personal-wallet-amount');
+  if (el) el.textContent = '$' + (personalWallet.balance || 0).toFixed(2);
+}
+
+function openPersonalAdd() {
+  const today = new Date().toISOString().split('T')[0];
+  showModal('<div class="modal bud-modal" style="max-width:400px;">'
+    +'<div class="modal-title" style="color:#a78bfa;">Add to Personal Funds</div>'
+    +'<div class="bud-form-row"><div class="bud-form-group"><label class="bud-form-label">Amount ($)</label><input class="bud-form-input" id="pw-add-amt" type="number" step="0.01" placeholder="0.00" autofocus></div>'
+    +'<div class="bud-form-group"><label class="bud-form-label">Date</label><input class="bud-form-input" id="pw-add-date" type="date" value="'+today+'"></div></div>'
+    +'<div class="bud-form-row"><div class="bud-form-group" style="flex:1;"><label class="bud-form-label">Source</label>'
+    +'<select class="bud-form-input" id="pw-add-source"><option value="personal_bucket">Personal Bucket Transfer</option><option value="gift">Gift</option><option value="bonus">Tip / Bonus</option><option value="cash">Cash</option><option value="other">Other</option></select></div></div>'
+    +'<div class="bud-form-row"><div class="bud-form-group" style="flex:1;"><label class="bud-form-label">Reason / Note</label><input class="bud-form-input" id="pw-add-note" placeholder="What is this for?"></div></div>'
+    +'<div class="modal-actions"><button class="btn btn-sm" onclick="closeModal()">Cancel</button><button class="btn btn-sm" style="border-color:#a78bfa;color:#a78bfa;" onclick="savePersonalAdd()">Add Funds</button></div>'
+    +'</div>');
+}
+
+function savePersonalAdd() {
+  const amt=parseFloat(document.getElementById('pw-add-amt').value);
+  const date=document.getElementById('pw-add-date').value;
+  const source=document.getElementById('pw-add-source').value;
+  const note=document.getElementById('pw-add-note').value.trim();
+  if(isNaN(amt)||amt<=0) return;
+  if(source==='personal_bucket'){
+    const bal=getBucketBalance('personal');
+    if(amt>bal&&!confirm('Personal bucket only has $'+bal.toFixed(2)+'. Transfer anyway?')) return;
+    bucketLedger.push({id:'pw_out_'+Date.now(),bucket:'personal',amount:amt,date,source:'wallet_transfer',note:'Moved to Personal Wallet'+(note?': '+note:''),type:'transfer_out'});
+    save('vf_bucket_ledger',bucketLedger); renderBucketPills(); renderKnobs();
+  }
+  personalWallet.balance=(personalWallet.balance||0)+amt;
+  save('vf_personal_wallet',personalWallet);
+  personalLog.push({id:'pl_'+Date.now(),type:'add',amount:amt,source,note,date});
+  save('vf_personal_log',personalLog);
+  closeModal(); renderPersonalWallet();
+}
+
+function openPersonalSpend() {
+  const today=new Date().toISOString().split('T')[0];
+  const bal=(personalWallet.balance||0).toFixed(2);
+  showModal('<div class="modal bud-modal" style="max-width:400px;">'
+    +'<div class="modal-title" style="color:#a78bfa;">Spend Personal Funds</div>'
+    +'<div style="font-size:0.68rem;color:var(--text-ghost);margin-bottom:10px;">Balance: <strong style="color:#a78bfa;">$'+bal+'</strong></div>'
+    +'<div class="bud-form-row"><div class="bud-form-group"><label class="bud-form-label">Amount ($)</label><input class="bud-form-input" id="pw-sp-amt" type="number" step="0.01" placeholder="0.00" autofocus></div>'
+    +'<div class="bud-form-group"><label class="bud-form-label">Date</label><input class="bud-form-input" id="pw-sp-date" type="date" value="'+today+'"></div></div>'
+    +'<div class="bud-form-row"><div class="bud-form-group" style="flex:1;"><label class="bud-form-label">What was it for?</label><input class="bud-form-input" id="pw-sp-note" placeholder="e.g. Dinner, game, whatever"></div></div>'
+    +'<div class="modal-actions"><button class="btn btn-sm" onclick="closeModal()">Cancel</button><button class="btn btn-sm" style="border-color:var(--danger);color:var(--danger);" onclick="savePersonalSpend()">Log Spend</button></div>'
+    +'</div>');
+}
+
+function savePersonalSpend() {
+  const amt=parseFloat(document.getElementById('pw-sp-amt').value);
+  const date=document.getElementById('pw-sp-date').value;
+  const note=document.getElementById('pw-sp-note').value.trim();
+  if(isNaN(amt)||amt<=0) return;
+  personalWallet.balance=Math.max(0,(personalWallet.balance||0)-amt);
+  save('vf_personal_wallet',personalWallet);
+  personalLog.push({id:'pl_'+Date.now(),type:'spend',amount:amt,note,date});
+  save('vf_personal_log',personalLog);
+  closeModal(); renderPersonalWallet();
+}
+
+function openPersonalLog() {
+  const SRC={personal_bucket:'Personal Bucket',gift:'Gift',bonus:'Tip/Bonus',cash:'Cash',other:'Other'};
+  const entries=[...personalLog].reverse();
+  const rows=entries.length
+    ?entries.map(e=>{
+        const add=e.type==='add';
+        return '<div style="display:flex;gap:8px;padding:6px 0;border-bottom:1px solid var(--border);">'
+          +'<div style="font-size:1rem;">'+(add?'&#128154;':'&#128248;')+'</div>'
+          +'<div style="flex:1;min-width:0;"><div style="font-size:0.7rem;color:var(--text);">'+esc(e.note||(add?'Funds added':'Spent'))+'</div>'
+          +'<div style="font-size:0.58rem;color:var(--text-ghost);">'+e.date+(e.source?' &bull; '+(SRC[e.source]||e.source):'')+'</div></div>'
+          +'<div style="font-size:0.75rem;font-weight:700;color:'+(add?'#a78bfa':'var(--danger)')+';">'+(add?'+':'-')+'$'+(e.amount||0).toFixed(2)+'</div>'
+          +'</div>';}).join('')
+    :'<div style="font-size:0.72rem;color:var(--text-ghost);text-align:center;padding:20px;">No entries yet.</div>';
+  showModal('<div class="modal bud-modal" style="max-width:480px;max-height:80vh;overflow-y:auto;">'
+    +'<div class="modal-title" style="color:#a78bfa;">Personal Funds Log</div>'
+    +'<div style="font-size:0.68rem;color:var(--text-ghost);margin-bottom:10px;">Balance: <strong style="color:#a78bfa;">$'+(personalWallet.balance||0).toFixed(2)+'</strong></div>'
+    +rows
+    +'<div class="modal-actions" style="margin-top:12px;"><button class="btn btn-teal" onclick="closeModal()">Close</button></div></div>');
+}
+
+function openBucketTransfer(fromKey) {
+  const today=new Date().toISOString().split('T')[0];
+  const fOpts=BUCKET_KEYS.map(k=>'<option value="'+k+'"'+(k===fromKey?' selected':'')+'>'+BUCKET_LABELS[k]+' ($'+getBucketBalance(k).toFixed(2)+')</option>').join('');
+  const tOpts=BUCKET_KEYS.filter(k=>k!==fromKey).map(k=>'<option value="'+k+'">'+BUCKET_LABELS[k]+'</option>').join('');
+  showModal('<div class="modal bud-modal" style="max-width:420px;">'
+    +'<div class="modal-title">Bucket Transfer</div>'
+    +'<div class="bud-form-row">'
+    +'<div class="bud-form-group"><label class="bud-form-label">Transferring From</label><select class="bud-form-input" id="bt-from" onchange="updateBucketTransferUI()">'+fOpts+'</select></div>'
+    +'<div class="bud-form-group"><label class="bud-form-label">Transferring To</label><select class="bud-form-input" id="bt-to">'+tOpts+'</select></div>'
+    +'</div>'
+    +'<div class="bud-form-row"><div class="bud-form-group"><label class="bud-form-label">Amount ($)</label><input class="bud-form-input" id="bt-amt" type="number" step="0.01" placeholder="0.00" autofocus></div>'
+    +'<div class="bud-form-group"><label class="bud-form-label">Date</label><input class="bud-form-input" id="bt-date" type="date" value="'+today+'"></div></div>'
+    +'<div class="bud-form-row"><div class="bud-form-group" style="flex:1;"><label class="bud-form-label">Note (optional)</label><input class="bud-form-input" id="bt-note" placeholder="e.g. Covering art commission from family budget"></div></div>'
+    +'<div class="modal-actions"><button class="btn btn-sm" onclick="closeModal()">Cancel</button><button class="btn btn-teal" onclick="saveBucketTransfer()">Transfer</button></div>'
+    +'</div>');
+}
+
+function updateBucketTransferUI() {
+  const fromKey=document.getElementById('bt-from')?.value;
+  const toSel=document.getElementById('bt-to');
+  if(!fromKey||!toSel) return;
+  toSel.innerHTML=BUCKET_KEYS.filter(k=>k!==fromKey).map(k=>'<option value="'+k+'">'+BUCKET_LABELS[k]+'</option>').join('');
+}
+
+function saveBucketTransfer() {
+  const fromKey=document.getElementById('bt-from').value;
+  const toKey=document.getElementById('bt-to').value;
+  const amt=parseFloat(document.getElementById('bt-amt').value);
+  const note=document.getElementById('bt-note').value.trim();
+  if(isNaN(amt)||amt<=0||fromKey===toKey) return;
+  const fromBal=getBucketBalance(fromKey);
+  if(amt>fromBal&&!confirm(BUCKET_LABELS[fromKey]+' only has $'+fromBal.toFixed(2)+'. Transfer anyway?')) return;
+  transferBetweenBuckets(fromKey,toKey,amt,note);
+  closeModal(); renderBucketPills(); renderKnobs(); updateBudgetGlance(); updateStats();
+}
+
 function renderBucketPills() {
   const container = document.getElementById('bucket-pills');
   if (!container) return;
@@ -8800,6 +8985,7 @@ function renderBucketPills() {
         <div class="bucket-pill-label">${BUCKET_LABELS[key]}</div>
         <div class="bucket-pill-amount" style="color:${color};">$${balance.toFixed(2)}</div>
         <div class="bucket-pill-pct">${pct}% of all income</div>
+        <button class="btn btn-sm" style="margin-top:6px;width:100%;font-size:0.58rem;padding:2px 0;border-color:${color};color:${color};opacity:0.75;" onclick="openBucketTransfer('${key}')">&#8644; Transfer</button>
       </div>`;
   }).join('');
 }
@@ -8868,10 +9054,10 @@ function saveManualIncome() {
     note,
   });
   save('vf_expenses', expenses);
+  depositToBuckets(amt, source, desc, date);
   closeModal();
   renderIncomeLog();
   renderSourceBars();
-  renderIncomeLog();
   checkIncomeReminder();
   updateStats();
   updateBudgetGlance();
@@ -9099,6 +9285,10 @@ function renderBudgetTab() {
   renderGoals();
   renderArtGoals();
   renderDeals();
+  migrateToBucketLedger();
+  renderPersonalWallet();
+  renderIncomeLog();
+  checkIncomeReminder();
   renderSourceBars();
   updateOverview();
   updateBudgetGlance();
